@@ -8,6 +8,7 @@ use actix_web::Responder;
 use clap::Command as ClapCommand;
 use clap::Arg;
 use clap::ArgMatches;
+use crate::config::config;
 
 const DEFAULT_PORT: &str = "8000";
 const DEFAULT_HOST: &str = "127.0.0.1";
@@ -42,8 +43,11 @@ pub(crate) async fn serve(args: &'_ ArgMatches) -> std::io::Result<()> {
 
     info!("Starting HTTP server on {}:{}", host, port);
 
-    HttpServer::new(|| {
+    let config = web::Data::new(config::get_config());
+
+    HttpServer::new(move || {
         App::new()
+            .app_data(config.clone())
             .service(web::resource("/webhook").to(webhook))
     })
         .bind((host.as_str(), port_as_int))?
@@ -51,11 +55,15 @@ pub(crate) async fn serve(args: &'_ ArgMatches) -> std::io::Result<()> {
         .await
 }
 
-async fn webhook(request: HttpRequest, body_bytes: web::Bytes) -> impl Responder {
+async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data<config::Config>) -> impl Responder {
     let body_as_string = String::from_utf8(body_bytes.to_vec()).unwrap();
 
     dbg!(&request);
     dbg!(&body_as_string);
+    dbg!(&config);
+
+    let mut number_of_handled_requests = config.number_of_handled_requests.lock().unwrap();
+    *number_of_handled_requests += 1;
 
     HttpResponse::Ok().body(format!("Hello world!\n\nRequest body:\n========\n{}\n========", body_as_string))
 }

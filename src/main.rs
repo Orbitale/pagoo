@@ -7,6 +7,9 @@ use clap::Arg;
 use std::env;
 use std::process::Command;
 
+pub(crate) mod config {
+    pub(crate) mod config;
+}
 pub(crate) mod webhook {
     pub(crate) mod serve;
 }
