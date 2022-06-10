@@ -1,5 +1,4 @@
 
-use actix_web::HttpRequest;
 use actix_web::web;
 use actix_web::App;
 use actix_web::HttpResponse;
@@ -55,7 +54,7 @@ pub(crate) async fn serve(args: &'_ ArgMatches) -> std::io::Result<()> {
         .await
 }
 
-async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data<config::Config>) -> impl Responder {
+async fn webhook(body_bytes: web::Bytes) -> impl Responder {
     let body_as_string = String::from_utf8(body_bytes.to_vec()).unwrap();
 
     HttpResponse::Ok().body(format!("Hello world!\nRequest body:\n========\n{}\n========", body_as_string))
