@@ -58,12 +58,5 @@ pub(crate) async fn serve(args: &'_ ArgMatches) -> std::io::Result<()> {
 async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data<config::Config>) -> impl Responder {
     let body_as_string = String::from_utf8(body_bytes.to_vec()).unwrap();
 
-    dbg!(&request);
-    dbg!(&body_as_string);
-    dbg!(&config);
-
-    let mut number_of_handled_requests = config.number_of_handled_requests.lock().unwrap();
-    *number_of_handled_requests += 1;
-
-    HttpResponse::Ok().body(format!("Hello world!\n\nRequest body:\n========\n{}\n========", body_as_string))
+    HttpResponse::Ok().body(format!("Hello world!\nRequest body:\n========\n{}\n========", body_as_string))
 }
