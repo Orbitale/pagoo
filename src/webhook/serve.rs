@@ -34,7 +34,7 @@ pub(crate) fn command_config<'a>() -> ClapCommand<'a> {
 }
 
 #[actix_web::main]
-pub(crate) async fn serve(args: &'_ ArgMatches) -> std::io::Result<()> {
+pub(crate) async fn serve(config_file: Option<&str>, args: &'_ ArgMatches) -> std::io::Result<()> {
     let host = args.value_of("host").unwrap_or(DEFAULT_HOST.as_ref()).to_string();
     let port = args.value_of("port").unwrap_or(DEFAULT_PORT.as_ref()).to_string();
 
@@ -42,7 +42,7 @@ pub(crate) async fn serve(args: &'_ ArgMatches) -> std::io::Result<()> {
 
     info!("Starting HTTP server on {}:{}", host, port);
 
-    let config = web::Data::new(config::get_config());
+    let config = web::Data::new(config::get_config(config_file));
 
     HttpServer::new(move || {
         App::new()

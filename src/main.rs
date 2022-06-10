@@ -34,6 +34,11 @@ fn main() {
     let app = get_app(version).subcommands(application_commands);
 
     let matches = app.get_matches();
+    let mut config_file_value = matches.value_of("config-file");
+    if config_file_value.is_some() && config_file_value.unwrap() == "" {
+        config_file_value = None;
+    }
+
     let verbose_value = matches.indices_of("verbose").unwrap_or_default();
     let is_quiet = matches.index_of("quiet").unwrap_or_default() > 0;
 
@@ -43,7 +48,7 @@ fn main() {
 
     match subcommand_name {
         Some(webhook::serve::COMMAND_NAME) => {
-            webhook::serve::serve(matches.subcommand_matches(&subcommand_name.unwrap()).unwrap()).unwrap();
+            webhook::serve::serve(config_file_value, matches.subcommand_matches(&subcommand_name.unwrap()).unwrap()).unwrap();
         },
         _ => {
             default_command();
@@ -55,8 +60,7 @@ fn get_app(version: &str) -> ClapCommand {
     ClapCommand::new(APPLICATION_NAME)
         .version(version)
         .author("Alex \"Pierstoval\" Rock <alex@orbitale.io>")
-        .about("
-")
+        .about("A tool to manage your local CI/CD/etc setup")
         .arg(
             Arg::new("config-file")
                 .short('c')
