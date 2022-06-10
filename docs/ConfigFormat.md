@@ -21,7 +21,3 @@
 ## JSON format
 
 [see json_sample.json](../samples/json_sample.json)
-
-## Yaml format
-
-[see yaml_sample.yaml](../samples/yaml_sample.yaml)

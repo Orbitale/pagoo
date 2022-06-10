@@ -16,6 +16,7 @@ pub(crate) struct Webhook {
     #[serde(rename(deserialize = "matchers-strategy"))]
     pub(crate) matchers_strategy: Option<MatchersStrategy>,
     pub(crate) matchers: Vec<Matcher>,
+    #[serde(rename(deserialize = "actions-to-execute"))]
     pub(crate) actions_to_execute: String,
 }
 
@@ -31,14 +32,17 @@ pub(crate) enum MatchersStrategy {
 
 //
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct Matcher {
     #[serde(rename(deserialize = "match-json-body"))]
-    pub(crate) match_json_body: HashMap<String, String>,
+    pub(crate) match_json_body: Option<HashMap<String, serde_json::Value>>,
     #[serde(rename(deserialize = "match-headers"))]
-    pub(crate) match_headers: HashMap<String, String>,
+    pub(crate) match_headers: Option<HashMap<String, String>>,
 }
 
+//
+//
+//
 //
 //
 //
@@ -54,16 +58,6 @@ impl Display for MatchersStrategy {
         match self {
             MatchersStrategy::All => write!(f, "all"),
             MatchersStrategy::One => write!(f, "one"),
-        }
-    }
-}
-
-//
-
-impl Config {
-    pub fn new() -> Self {
-        Self {
-            webhooks: vec![]
         }
     }
 }
@@ -91,5 +85,5 @@ pub(crate) fn get_config(config_file: Option<&str>) -> Config {
 
     dbg!(&config);
 
-    Config::new()
+    config
 }
