@@ -5,9 +5,11 @@ use log::Level;
 use pretty_env_logger::env_logger::fmt::Color;
 use pretty_env_logger::env_logger::fmt::Style;
 use pretty_env_logger::env_logger::fmt::StyledValue;
+use crate::APPLICATION_NAME;
 
 pub fn set_verbosity_value(value: usize, is_quiet: bool) {
-    let level = std::env::var("PAGOO_LOG").unwrap_or(String::from("INFO"));
+    let env_var_name = format!("{}_LOG", APPLICATION_NAME.to_ascii_uppercase());
+    let level = std::env::var(env_var_name).unwrap_or(String::from("INFO"));
     let mut level = level.as_str();
 
     let mut builder = pretty_env_logger::formatted_timed_builder();

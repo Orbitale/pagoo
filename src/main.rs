@@ -16,6 +16,8 @@ pub(crate) mod webhook {
 
 mod logging;
 
+const APPLICATION_NAME: &str = "pagoo";
+
 fn application_commands<'a>() -> Vec<clap::Command<'a>> {
     vec![
         webhook::serve::command_config(),
@@ -50,7 +52,7 @@ fn main() {
 }
 
 fn get_app(version: &str) -> ClapCommand {
-    ClapCommand::new("pagoo")
+    ClapCommand::new(APPLICATION_NAME)
         .version(version)
         .author("Alex \"Pierstoval\" Rock <alex@orbitale.io>")
         .about("
