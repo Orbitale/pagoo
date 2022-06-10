@@ -58,6 +58,15 @@ fn get_app(version: &str) -> ClapCommand {
         .about("
 ")
         .arg(
+            Arg::new("config-file")
+                .short('c')
+                .long("config-file")
+                .multiple_occurrences(false)
+                .multiple_values(false)
+                .takes_value(true)
+                .help("Specify the config file to use for this instance."),
+        )
+        .arg(
             Arg::new("verbose")
                 .short('v')
                 .long("verbose")
