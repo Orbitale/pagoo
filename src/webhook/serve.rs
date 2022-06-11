@@ -128,7 +128,5 @@ async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data
         return HttpResponse::Created().body(format!("Matched! Actions to add: {:?}\n", &actions_to_add));
     }
 
-    dbg!(&config);
-
     HttpResponse::BadRequest().body(format!("Request matched no webhook.\nBody:\n{}\n", body_as_string))
 }
