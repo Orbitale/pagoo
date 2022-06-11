@@ -9,10 +9,7 @@
                         "repository": {
                             "url": "https://github.com/my-org/my-repo"
                         },
-                        "action": "published",
-                        "release": {
-                            "tag_name": "!regex:^v[0-9]+.[0-9]+.[0-9]+$"
-                        }
+                        "action": "published"
                     }
                 },
                 {

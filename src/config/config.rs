@@ -35,7 +35,7 @@ pub(crate) enum MatchersStrategy {
 #[derive(Debug, Deserialize)]
 pub(crate) struct Matcher {
     #[serde(rename(deserialize = "match-json-body"))]
-    pub(crate) match_json_body: Option<HashMap<String, serde_json::Value>>,
+    pub(crate) match_json_body: Option<serde_json::Value>,
     #[serde(rename(deserialize = "match-headers"))]
     pub(crate) match_headers: Option<HashMap<String, String>>,
 }
