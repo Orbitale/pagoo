@@ -22,7 +22,7 @@ pub(crate) struct Webhook {
 
 //
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub(crate) enum MatchersStrategy {
     #[serde(rename = "all")]
     All,
@@ -50,6 +50,11 @@ pub(crate) struct Matcher {
 impl Default for MatchersStrategy {
     fn default() -> Self {
         MatchersStrategy::All
+    }
+}
+impl Default for &MatchersStrategy {
+    fn default() -> Self {
+        &MatchersStrategy::All
     }
 }
 
@@ -82,8 +87,6 @@ pub(crate) fn get_config(config_file: Option<&str>) -> Config {
     let config_file_content = std::fs::read_to_string(config_file_path).unwrap();
 
     let config: Config = serde_json::from_str(&config_file_content).unwrap();
-
-    dbg!(&config);
 
     config
 }

@@ -2,7 +2,7 @@
     "webhooks": [
         {
             "name": "my_webhook_name",
-            "matchers-strategy": "all",
+            "matchers-strategy": "one",
             "matchers": [
                 {
                     "match-json-body": {
