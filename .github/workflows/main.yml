@@ -1,0 +1,47 @@
+name: Main CI
+
+on:
+    push: ~
+    pull_request: ~
+
+jobs:
+    build:
+        strategy:
+            fail-fast: false
+            matrix:
+                os:
+                    - ubuntu-latest
+                    - windows-latest
+
+        runs-on: ${{ matrix.os }}
+        steps:
+            - { name: "Checkout the code", uses: actions/checkout@v2 }
+
+            - name: 🗄️ Setup Rust cache
+              uses: actions/cache@v2
+              with:
+                  key: ${{ matrix.os }}-${{ hashFiles('Cargo.lock') }}
+                  path: |
+                      ~/.cargo/registry/index
+                      ~/.cargo/registry/cache
+                      ~/.cargo/git
+                      ./target
+
+            - name: 🦀 Install Rust
+              uses: actions-rs/toolchain@v1
+              with: { toolchain: stable }
+
+            - name: 🔌 Download Rust dependencies
+              run: cargo fetch
+
+            - name: 🏗️ 💽 Build application
+              run: make build
+
+            - name: 🧪 Test application
+              run: make test
+
+            - name: 🚀 Upload release artifacts
+              uses: actions/upload-artifact@v2
+              with:
+                  name: release-${{ matrix.os }}
+                  path: target/release/*

@@ -16,7 +16,8 @@ start-webhook: ## Start the release version of the webhook API
 	cargo run --release -- --config-file samples/json_sample.json serve:webhook 2>&1
 .PHONY: start-webhook
 
+# TODO: check if we can run the tool in the background so we can run curl-based tests
+#curl -i http://127.0.0.1:8000/webhook -X POST -d $$(jq -c -M '.webhooks[0].matchers[0][\"match-json-body\"]' samples/json_sample.json)
 test: ## Run the tests
-	#@($(MAKE) start-webhook) &
-	curl -i http://127.0.0.1:8000/webhook -X POST -d $$(jq -c -M '.webhooks[0].matchers[0][\"match-json-body\"]' samples/json_sample.json)
+	cargo test --no-fail-fast
 .PHONY: test
