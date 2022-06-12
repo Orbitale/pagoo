@@ -62,7 +62,9 @@ async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data
     let body_as_string = String::from_utf8(body_bytes.to_vec()).unwrap();
     let headers = request.headers();
 
-    let actions_to_add = get_actions_to_execute(&config, &body_as_string, headers);
+    let config = config.get_ref();
+
+    let actions_to_add = get_actions_to_execute(config, &body_as_string, headers);
 
     if actions_to_add.len() > 0 {
         info!("Actions to add: {:?}", &actions_to_add);
@@ -73,7 +75,7 @@ async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data
     HttpResponse::BadRequest().body(format!("Request matched no webhook.\nBody:\n{}\n", body_as_string))
 }
 
-fn get_actions_to_execute(config: &web::Data<Config>, body_as_string: &String, headers: &HeaderMap) -> Vec<String> {
+fn get_actions_to_execute(config: &Config, body_as_string: &String, headers: &HeaderMap) -> Vec<String> {
     let mut actions_to_add: Vec<String> = Vec::new();
 
     for webhook in &config.webhooks {
