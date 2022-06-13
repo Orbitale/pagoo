@@ -45,8 +45,8 @@ jobs:
                   make start-webhook &
                   make test-running
 
-            - name: 🚀 Upload release artifacts
-              uses: actions/upload-artifact@v2
-              with:
-                  name: release-${{ matrix.os }}
-                  path: target/release/*
+            #- name: 🚀 Upload release artifacts
+            #  uses: actions/upload-artifact@v2
+            #  with:
+            #      name: release-${{ matrix.os }}
+            #      path: target/release/*
