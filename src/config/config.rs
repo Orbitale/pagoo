@@ -1,7 +1,6 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::path::PathBuf;
 use crate::APPLICATION_NAME;
 
 #[derive(Debug, Default, Deserialize)]
@@ -93,51 +92,58 @@ pub(crate) fn get_config(config_file: Option<&str>) -> Config {
 }
 
 #[cfg(test)]
-fn get_sample_file_path() -> PathBuf {
-    std::env::current_dir().unwrap().join("samples/json_sample.json")
-}
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
 
-#[test]
-fn test_config() {
-    let sample_file = get_sample_file_path();
+    #[cfg(test)]
+    fn get_sample_file_path() -> PathBuf {
+        std::env::current_dir().unwrap().join("samples/json_sample.json")
+    }
 
-    assert_eq!(true, sample_file.is_file());
+    #[test]
+    fn test_config() {
+        let sample_file = get_sample_file_path();
 
-    let config = get_config(Some(sample_file.to_str().unwrap()));
+        assert_eq!(true, sample_file.is_file());
 
-    // Webhook
-    assert_eq!(1, config.webhooks.len());
-    let webhook = &config.webhooks[0];
-    assert_eq!("my_webhook_name", webhook.name);
-    assert_eq!("curl -i ...\nmy_binary --verbose ...", webhook.actions_to_execute);
-    assert_eq!(true, webhook.matchers_strategy.is_some());
-    assert_eq!(MatchersStrategy::One, webhook.matchers_strategy.unwrap());
+        let config = get_config(Some(sample_file.to_str().unwrap()));
 
-    assert_eq!(2, webhook.matchers.len());
+        // Webhook
+        assert_eq!(1, config.webhooks.len());
+        let webhook = &config.webhooks[0];
+        assert_eq!("my_webhook_name", webhook.name);
+        assert_eq!("curl -i ...\nmy_binary --verbose ...", webhook.actions_to_execute);
+        assert_eq!(true, webhook.matchers_strategy.is_some());
+        assert_eq!(MatchersStrategy::One, webhook.matchers_strategy.unwrap());
 
-    // First matcher
-    let matcher = &webhook.matchers[0];
-    assert_eq!(true, matcher.match_headers.is_none());
-    let json_body = matcher.match_json_body.as_ref();
-    assert_eq!(true, json_body.is_some());
-    assert_eq!(
-        json_body.unwrap(),
-        &serde_json::json!({
-            "repository": {
-                "url": "https://github.com/my-org/my-repo"
-            },
-            "action": "published"
-        })
-    );
+        assert_eq!(2, webhook.matchers.len());
 
-    // Second matcher
-    let matcher = &webhook.matchers[1];
-    assert_eq!(true, matcher.match_json_body.is_none());
-    let headers = matcher.match_headers.as_ref();
-    assert_eq!(true, headers.is_some());
-    let headers_map = headers.unwrap();
-    assert_eq!(true, headers_map.contains_key("x-github-event"));
-    assert_eq!("release", headers_map.get("x-github-event").unwrap());
-    assert_eq!(true, headers_map.contains_key("x-github-delivery"));
-    assert_eq!("12345", headers_map.get("x-github-delivery").unwrap());
+        // First matcher
+        let matcher = &webhook.matchers[0];
+        assert_eq!(true, matcher.match_headers.is_none());
+        let json_body = matcher.match_json_body.as_ref();
+        assert_eq!(true, json_body.is_some());
+        assert_eq!(
+            json_body.unwrap(),
+            &serde_json::json!({
+                "repository": {
+                    "url": "https://github.com/my-org/my-repo"
+                },
+                "action": "published"
+            })
+        );
+
+        // Second matcher
+        let matcher = &webhook.matchers[1];
+        assert_eq!(true, matcher.match_json_body.is_none());
+        let headers = matcher.match_headers.as_ref();
+        assert_eq!(true, headers.is_some());
+        let headers_map = headers.unwrap();
+        assert_eq!(true, headers_map.contains_key("x-github-event"));
+        assert_eq!("release", headers_map.get("x-github-event").unwrap());
+        assert_eq!(true, headers_map.contains_key("x-github-delivery"));
+        assert_eq!("12345", headers_map.get("x-github-delivery").unwrap());
+    }
+
 }

@@ -9,9 +9,10 @@ use clap::Command as ClapCommand;
 use clap::Arg;
 use clap::ArgMatches;
 use crate::config::config;
-use crate::config::config::Matcher;
 use crate::config::config::Config;
 use crate::config::config::MatchersStrategy;
+use crate::matchers::headers::match_headers;
+use crate::matchers::json::match_json;
 
 const DEFAULT_PORT: &str = "8000";
 const DEFAULT_HOST: &str = "127.0.0.1";
@@ -102,52 +103,4 @@ fn get_actions_to_execute(config: &Config, body_as_string: &String, headers: &He
     }
 
     actions_to_add
-}
-
-fn match_headers(headers: &HeaderMap, matcher: &Matcher) -> bool {
-    if matcher.match_headers.is_none() {
-        return false;
-    }
-
-    let matcher_headers = matcher.match_headers.as_ref().unwrap();
-    let number_of_headers = matcher_headers.len();
-    let mut headers_matching = 0;
-
-    for (header_name, header_value) in matcher_headers {
-        if headers.contains_key(header_name) {
-            let header_value_as_string = headers.get(header_name).unwrap().to_str().unwrap();
-            if header_value_as_string == header_value {
-                headers_matching += 1
-            }
-        }
-    }
-
-    return headers_matching == number_of_headers;
-}
-
-fn match_json(body_as_string: &String, matcher: &Matcher) -> bool {
-    if matcher.match_json_body.is_none() {
-        return false;
-    }
-
-    let match_json_body = matcher.match_json_body.as_ref().unwrap();
-    let match_json_body = serde_json::json!(match_json_body);
-
-    let deserialized_result = serde_json::from_str::<serde_json::Value>(body_as_string.as_str());
-    if deserialized_result.is_err() {
-        debug!("Deserialization failed, skipping JSON matcher.");
-        debug!("Deserialization error: {}", deserialized_result.unwrap_err());
-        return false;
-    }
-
-    let deserialized_json = deserialized_result.unwrap();
-
-    let json_comparator_config = assert_json_diff::Config::new(assert_json_diff::CompareMode::Strict);
-    let matching_json_result = assert_json_diff::assert_json_matches_no_panic(&deserialized_json, &match_json_body, json_comparator_config);
-
-    if matching_json_result.is_ok() {
-        return true;
-    }
-
-    false
 }
