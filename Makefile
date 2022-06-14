@@ -17,7 +17,7 @@ start-webhook: ## Start the release version of the webhook API
 .PHONY: start-webhook
 
 test: ## Run the tests
-	cargo test --no-fail-fast
+	cargo test --no-fail-fast --release
 .PHONY: test
 
 tests: test # Mostly here for people confusing plural and singular
