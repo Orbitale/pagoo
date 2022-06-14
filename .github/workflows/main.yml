@@ -37,13 +37,8 @@ jobs:
             - name: 🏗️ 💽 Build application
               run: make build
 
-            - name: 🧪 Test Rust files
+            - name: 🧪 Run all tests
               run: make test
-
-            - name: 🧪 Test application running
-              run: |
-                  make start-webhook &
-                  make test-running
 
             #- name: 🚀 Upload release artifacts
             #  uses: actions/upload-artifact@v2
