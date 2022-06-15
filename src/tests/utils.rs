@@ -45,12 +45,14 @@ pub fn wait_for_http_server_startup(command: &mut Command) -> Result<Child, anyh
 
         buffer.push_str(&cleaned_buf_str);
 
-        if now.elapsed().as_millis() > 1500 {
+        if now.elapsed().as_millis() > 2500 {
+            error!("Could not start server: {}", buffer);
             child_command.kill()?;
             return Err(anyhow::anyhow!("Server was too slow to start."));
         }
 
         if buffer.contains("Starting HTTP server on 127.0.0.1:8000") {
+            info!("Server started: {}", buffer);
             break;
         }
     }
