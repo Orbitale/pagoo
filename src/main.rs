@@ -18,6 +18,11 @@ pub(crate) mod webhook {
     pub(crate) mod serve;
 }
 
+#[cfg(test)]
+pub(crate) mod tests {
+    pub(crate) mod utils;
+}
+
 mod logging;
 
 const APPLICATION_NAME: &str = "pagoo";

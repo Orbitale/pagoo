@@ -110,56 +110,17 @@ fn get_actions_to_execute(config: &Config, body_as_string: &String, headers: &He
 #[cfg(test)]
 mod tests {
     use hyper::Body;
-    use hyper::Client;
     use hyper::Request;
-    use std::io::Read;
-    use std::process::Command;
-    use std::process::Child;
-    use crate::APPLICATION_NAME;
-
-    fn get_command() -> Command {
-        let extension = if cfg!(target_os = "windows") { ".exe" } else { "" };
-        let command_name = format!("target/release/{}{}", APPLICATION_NAME, extension);
-        let mut command = Command::new(command_name);
-
-        command
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .args(&["--config-file", "samples/json_sample.json", "serve:webhook"])
-        ;
-
-        command
-    }
-
-    fn get_command_outputs(child_command: Child) -> (String, String) {
-        let stdout = child_command.stdout.unwrap();
-        let stderr = child_command.stderr.unwrap();
-
-        let stdout_slice = stdout.bytes().map(|b| b.unwrap()).collect();
-        let stderr_slice = stderr.bytes().map(|b| b.unwrap()).collect();
-
-        let stdout_string = String::from_utf8(stdout_slice).unwrap();
-        let sterr_string = String::from_utf8(stderr_slice).unwrap();
-
-        (stdout_string, sterr_string)
-    }
-
-    fn get_http_client() -> Client<hyper::client::HttpConnector> {
-        let builder = Client::builder();
-
-        builder.build_http()
-    }
+    use crate::tests::utils;
 
     #[test]
     fn test_command_with_json() -> anyhow::Result<()> {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 
-        let mut command = get_command();
+        let mut command = utils::get_serve_webhook_command();
+        let mut child = utils::wait_for_http_server_startup(&mut command)?;
 
-        let mut child = command.spawn()?;
-        std::thread::sleep(std::time::Duration::from_millis(250));
-
-        let client = get_http_client();
+        let client = utils::get_test_http_client();
 
         let req = Request::builder()
             .method("POST")
@@ -170,9 +131,6 @@ mod tests {
         let (res, body) = tokio_runtime.block_on(client.request(req))?.into_parts();
 
         child.kill()?;
-        let (stdout, stderr) = get_command_outputs(child);
-        assert_eq!(stdout, "".to_string());
-        assert!(stderr.contains("Starting HTTP server on 127.0.0.1:8000\n"));
 
         let status = res.status;
         assert_eq!(status, hyper::StatusCode::CREATED);
@@ -189,12 +147,10 @@ mod tests {
     fn test_command_with_headers() -> anyhow::Result<()> {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 
-        let mut command = get_command();
+        let mut command = utils::get_serve_webhook_command();
+        let mut child = utils::wait_for_http_server_startup(&mut command)?;
 
-        let mut child = command.spawn()?;
-        std::thread::sleep(std::time::Duration::from_millis(250));
-
-        let client = get_http_client();
+        let client = utils::get_test_http_client();
 
         let req = Request::builder()
             .method("POST")
@@ -207,9 +163,6 @@ mod tests {
         let (res, body) = tokio_runtime.block_on(client.request(req))?.into_parts();
 
         child.kill()?;
-        let (stdout, stderr) = get_command_outputs(child);
-        assert_eq!(stdout, "".to_string());
-        assert!(stderr.contains("Starting HTTP server on 127.0.0.1:8000\n"));
 
         let status = res.status;
         assert_eq!(status, hyper::StatusCode::CREATED);
