@@ -117,9 +117,6 @@ mod tests {
     fn test_command_with_json() -> anyhow::Result<()> {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 
-        let mut command = utils::get_serve_webhook_command();
-        let mut child = utils::wait_for_http_server_startup(&mut command)?;
-
         let client = utils::get_test_http_client();
 
         let req = Request::builder()
@@ -129,8 +126,6 @@ mod tests {
         ;
 
         let (res, body) = tokio_runtime.block_on(client.request(req))?.into_parts();
-
-        child.kill()?;
 
         let status = res.status;
         assert_eq!(status, hyper::StatusCode::CREATED);
@@ -147,9 +142,6 @@ mod tests {
     fn test_command_with_headers() -> anyhow::Result<()> {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 
-        let mut command = utils::get_serve_webhook_command();
-        let mut child = utils::wait_for_http_server_startup(&mut command)?;
-
         let client = utils::get_test_http_client();
 
         let req = Request::builder()
@@ -161,8 +153,6 @@ mod tests {
         ;
 
         let (res, body) = tokio_runtime.block_on(client.request(req))?.into_parts();
-
-        child.kill()?;
 
         let status = res.status;
         assert_eq!(status, hyper::StatusCode::CREATED);
