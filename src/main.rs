@@ -2,18 +2,28 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
+use clap::ArgMatches;
 use clap::Command as ClapCommand;
 use clap::Arg;
 use std::env;
 use std::process::Command;
+use std::process::Termination;
+use std::process::ExitCode;
+use crate::commands::serve_webhook;
 
 pub(crate) mod config {
     pub(crate) mod config;
 }
+
+pub(crate) mod commands {
+    pub(crate) mod serve_webhook;
+}
+
 pub(crate) mod matchers {
     pub(crate) mod json;
     pub(crate) mod headers;
 }
+
 pub(crate) mod webhook {
     pub(crate) mod serve;
 }
@@ -27,20 +37,73 @@ mod logging;
 
 const APPLICATION_NAME: &str = "pagoo";
 
-fn application_commands<'a>() -> Vec<clap::Command<'a>> {
-    vec![
-        webhook::serve::command_config(),
-    ]
+struct ReturnExitCode {
+    exit_code: Option<ExitCode>,
 }
 
-fn main() {
-    let build_metadata = include_str!("../build_metadata.txt").trim().replace("\n", "");
-    let build_metadata_str = build_metadata.as_str();
-    let version = if build_metadata == "" { "dev" } else { build_metadata_str };
+impl ReturnExitCode {
+    fn new(exit_code: Option<ExitCode>) -> Self {
+        Self {
+            exit_code,
+        }
+    }
+}
 
+impl From<Option<ExitCode>> for ReturnExitCode {
+    fn from(input: Option<ExitCode>) -> Self {
+        ReturnExitCode::new(input)
+    }
+}
+
+impl Termination for ReturnExitCode {
+    fn report(self) -> ExitCode {
+        match self.exit_code {
+            Some(code) => code.report(),
+            None => ExitCode::FAILURE,
+        }
+    }
+}
+
+struct CommandList {
+    commands: Vec<Box<CommandHandler>>,
+}
+
+impl CommandList {
+    fn subcommands(&self) -> Vec<ClapCommand<'static>> {
+        self.commands.iter().fold(Vec::new(), |mut commands, command| {
+            commands.push(command.command_definition.clone());
+            commands
+        })
+    }
+}
+
+pub(crate) struct CommandHandler {
+    pub(crate) command_definition: ClapCommand<'static>,
+    pub(crate) executor: Box<dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>>,
+}
+
+impl CommandHandler {
+    pub fn new(command_definition: ClapCommand<'static>, executor: Box<dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>>) -> Self {
+        Self { command_definition, executor }
+    }
+}
+
+fn application_commands() -> CommandList {
+    CommandList {
+        commands: vec![
+            Box::new(serve_webhook::get_command())
+        ],
+    }
+}
+
+const APP_VERSION_METADATA: &'static str = include_str!("../.version");
+
+fn main() -> ReturnExitCode {
     let application_commands = application_commands();
 
-    let app = get_app(version).subcommands(application_commands);
+    let subcommands = application_commands.subcommands().into_iter();
+
+    let app = get_app().subcommands(subcommands);
 
     let matches = app.get_matches();
     let mut config_file_value = matches.value_of("config-file");
@@ -54,20 +117,28 @@ fn main() {
     logging::set_verbosity_value(verbose_value.len(), is_quiet);
 
     let subcommand_name = matches.subcommand_name();
-
-    match subcommand_name {
-        Some(webhook::serve::COMMAND_NAME) => {
-            webhook::serve::serve(config_file_value, matches.subcommand_matches(&subcommand_name.unwrap()).unwrap()).unwrap();
-        },
-        _ => {
-            default_command();
-        }
+    let args = if subcommand_name.is_some() {
+        matches.subcommand_matches(&subcommand_name.unwrap())
+    } else {
+        None
     };
+
+    if subcommand_name.is_some() {
+        let subcommand_name = subcommand_name.unwrap();
+        for command in application_commands.commands.iter() {
+            if command.command_definition.get_name() == subcommand_name {
+                return (command.executor)(config_file_value, args.unwrap()).into();
+            }
+        }
+    }
+
+    default_command().into()
 }
 
-fn get_app(version: &str) -> ClapCommand {
+fn get_app<'a>() -> ClapCommand<'a> {
+
     ClapCommand::new(APPLICATION_NAME)
-        .version(version)
+        .version(APP_VERSION_METADATA.trim())
         .author("Alex \"Pierstoval\" Rock <alex@orbitale.io>")
         .about("A tool to manage your local CI/CD/etc setup")
         .arg(
@@ -97,7 +168,7 @@ fn get_app(version: &str) -> ClapCommand {
         )
 }
 
-fn default_command() {
+fn default_command() -> Option<ExitCode> {
     let process_args: Vec<String> = env::args().collect();
     let current_process_name = process_args[0].as_str().to_owned();
 
@@ -105,10 +176,14 @@ fn default_command() {
     // re-run the program with "--help"
     let mut subprocess = Command::new(&current_process_name)
         .arg("--help")
-        .spawn()
-        .expect("Failed to create the \"help\" command.");
+        .spawn().ok()?;
 
-    subprocess
-        .wait()
-        .expect("Failed to run the \"help\" command.");
+    let child = subprocess.wait().ok()?;
+
+    let status = child.code();
+
+    match status {
+        Some(code) => Some(ExitCode::from(code as u8)),
+        None => Some(ExitCode::FAILURE),
+    }
 }

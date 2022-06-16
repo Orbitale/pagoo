@@ -1,47 +1,9 @@
-use std::process::Child;
-use std::process::Command;
-use std::process::Stdio;
+use hyper::Client;
 use std::io::BufReader;
 use std::io::Read;
-use hyper::Client;
+use std::process::Command;
+use std::process::Stdio;
 use crate::APPLICATION_NAME;
-
-use std::sync::Once;
-
-struct PID {
-    pid: u32,
-}
-
-impl PID {
-    const fn new(pid: u32) -> Self {
-        PID { pid }
-    }
-
-    fn set(&mut self, pid: u32) {
-        self.pid = pid;
-    }
-}
-
-impl Drop for PID {
-    fn drop(&mut self) {
-        if self.pid != 0 {
-            kill_process(self.pid);
-        }
-    }
-}
-
-static INIT: Once = Once::new();
-
-static mut SERVER_PID: PID = PID::new(0);
-
-fn ensure_server_started() {
-    INIT.call_once(|| {
-        let child = wait_for_http_server_startup(&mut get_serve_webhook_command()).unwrap();
-        unsafe {
-            SERVER_PID.set(child.id());
-        }
-    });
-}
 
 pub(crate) fn get_test_http_client() -> Client<hyper::client::HttpConnector> {
     ensure_server_started();
@@ -51,21 +13,11 @@ pub(crate) fn get_test_http_client() -> Client<hyper::client::HttpConnector> {
     builder.build_http()
 }
 
-fn get_serve_webhook_command() -> Command {
-    let extension = if cfg!(target_os = "windows") { ".exe" } else { "" };
-    let command_name = format!("target/release/{}{}", APPLICATION_NAME, extension);
-    let mut command = Command::new(command_name);
-
-    command
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .args(&["--config-file", "samples/json_sample.json", "serve:webhook"])
-    ;
-
-    command
+fn ensure_server_started() {
+    wait_for_http_server_startup(&mut get_serve_webhook_command()).unwrap();
 }
 
-fn wait_for_http_server_startup(command: &mut Command) -> Result<Child, anyhow::Error> {
+fn wait_for_http_server_startup(command: &mut Command) -> Result<(), anyhow::Error> {
     let mut child_command = command.spawn()?;
 
     let stderr = child_command.stderr.take().ok_or(anyhow::anyhow!("Could not get stderr from child process"))?;
@@ -99,39 +51,24 @@ fn wait_for_http_server_startup(command: &mut Command) -> Result<Child, anyhow::
         }
     }
 
-    Ok(child_command)
+    Ok(())
 }
 
+fn get_serve_webhook_command() -> Command {
+    let extension = if cfg!(target_os = "windows") { ".exe" } else { "" };
+    let target = option_env!("OPT_LEVEL").unwrap_or("debug");
+    let command_name = format!("target/{}/{}{}", target, APPLICATION_NAME, extension);
+    let mut command = Command::new(command_name);
 
-#[cfg(target_family = "windows")]
-fn kill_process(pid: u32) {
-    let mut child = Command::new("taskkill")
-        .arg("/T") // Stops process tree
-        .arg("/F") // Force stop
-        .arg("/PID")
-        .arg(pid.to_string())
-        .stderr(Stdio::null())
-        .stdout(Stdio::null())
-        .spawn()
-        .expect("Could not stop server.");
+    command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .args(&[
+            "--config-file",
+            "samples/json_sample.json",
+            "serve:webhook",
+        ])
+    ;
 
-    child
-        .wait()
-        .expect("An error occured when trying to stop the server");
-}
-
-#[cfg(not(target_family = "windows"))]
-fn kill_process(pid: u32) {
-    let mut child = Command::new("kill")
-        .stderr(Stdio::null())
-        .stdout(Stdio::null())
-        .arg("-TERM")
-        .arg("--")
-        .arg(pid.to_string())
-        .spawn()
-        .expect("Could not stop server.");
-
-    child
-        .wait()
-        .expect("An error occured when trying to stop the server");
+    command
 }

@@ -5,43 +5,19 @@ use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::HttpServer;
 use actix_web::Responder;
-use clap::Command as ClapCommand;
-use clap::Arg;
-use clap::ArgMatches;
 use crate::config::config;
 use crate::config::config::Config;
 use crate::config::config::MatchersStrategy;
 use crate::matchers::headers::match_headers;
 use crate::matchers::json::match_json;
 
-const DEFAULT_PORT: &str = "8000";
-const DEFAULT_HOST: &str = "127.0.0.1";
-
-pub(crate) const COMMAND_NAME: &str = "serve:webhook";
-
-pub(crate) fn command_config<'a>() -> ClapCommand<'a> {
-    ClapCommand::new(COMMAND_NAME)
-        .about("Starts the Webhook HTTP server")
-        .arg(
-            Arg::new("port")
-                .long("port")
-                .help("The TCP port to listen to")
-                .default_value(DEFAULT_PORT.as_ref())
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("host")
-                .long("host")
-                .help("The network host to listen to")
-                .default_value(DEFAULT_HOST.as_ref())
-                .takes_value(true),
-        )
-}
+pub(crate) const DEFAULT_PORT: &str = "8000";
+pub(crate) const DEFAULT_HOST: &str = "127.0.0.1";
 
 #[actix_web::main]
-pub(crate) async fn serve(config_file: Option<&str>, args: &'_ ArgMatches) -> std::io::Result<()> {
-    let host = args.value_of("host").unwrap_or(DEFAULT_HOST.as_ref()).to_string();
-    let port = args.value_of("port").unwrap_or(DEFAULT_PORT.as_ref()).to_string();
+pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: Option<&str>) -> std::io::Result<()> {
+    let host = host.unwrap_or(DEFAULT_HOST);
+    let port = port.unwrap_or(DEFAULT_PORT);
 
     let port_as_int = port.parse::<u16>().expect("Invalid port value.");
 
@@ -54,7 +30,7 @@ pub(crate) async fn serve(config_file: Option<&str>, args: &'_ ArgMatches) -> st
             .app_data(config.clone())
             .service(web::resource("/webhook").to(webhook))
     })
-        .bind((host.as_str(), port_as_int))?
+        .bind((host, port_as_int))?
         .run()
         .await
 }
