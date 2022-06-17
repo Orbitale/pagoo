@@ -33,16 +33,18 @@ pub(crate) fn teardown() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-pub(crate) fn get_test_http_client() -> Client<hyper::client::HttpConnector> {
-    ensure_server_started();
+pub(crate) fn get_test_http_client() -> anyhow::Result<Client<hyper::client::HttpConnector>> {
+    ensure_server_started()?;
 
     let builder = Client::builder();
 
-    builder.build_http()
+    Ok(builder.build_http())
 }
 
-fn ensure_server_started() {
-    wait_for_http_server_startup(&mut get_serve_webhook_command()).unwrap();
+fn ensure_server_started() -> anyhow::Result<()> {
+    wait_for_http_server_startup(&mut get_serve_webhook_command())?;
+
+    Ok(())
 }
 
 fn wait_for_http_server_startup(command: &mut Command) -> Result<(), anyhow::Error> {

@@ -100,7 +100,7 @@ mod tests {
     fn test_command_with_json() -> anyhow::Result<()> {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 
-        let client = utils::get_test_http_client();
+        let client = utils::get_test_http_client()?;
 
         let req = Request::builder()
             .method("POST")
@@ -128,7 +128,7 @@ mod tests {
     fn test_command_with_headers() -> anyhow::Result<()> {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 
-        let client = utils::get_test_http_client();
+        let client = utils::get_test_http_client()?;
 
         let req = Request::builder()
             .method("POST")
