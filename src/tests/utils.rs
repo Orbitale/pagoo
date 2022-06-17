@@ -105,7 +105,7 @@ fn get_serve_webhook_command() -> Command {
 }
 
 #[cfg(target_family = "windows")]
-pub(crate) fn kill_process(pid: &str) -> Result<(), StdioError> {
+pub(crate) fn kill_process(pid: &str) -> Result<(), anyhow::Error> {
     let mut child = Command::new("taskkill")
         .arg("/T") // Stops process tree
         .arg("/F") // Force stop
@@ -115,10 +115,12 @@ pub(crate) fn kill_process(pid: &str) -> Result<(), StdioError> {
         .stdout(Stdio::null())
         .spawn()?;
 
-    if child.wait()?.success() {
-        Ok(())
-    } else {
-        Err("Could not stop process".into())
+    let exit_status = child.wait()?;
+
+    match exit_status.code() {
+        Some(0) => Ok(()),
+        Some(code) => Err(anyhow::anyhow!("Could not stop process. Exit code: {}", code)),
+        None => Err(anyhow::anyhow!("Could not stop process. Exit status was None")),
     }
 }
 
