@@ -6,6 +6,10 @@ on:
 
 jobs:
     build:
+        env:
+            RUST_BACKTRACE: full
+            PAGOO_LOG: trace
+
         strategy:
             fail-fast: false
             matrix:
