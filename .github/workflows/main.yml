@@ -6,16 +6,20 @@ on:
 
 jobs:
     build:
-        env:
-            RUST_BACKTRACE: full
-            PAGOO_LOG: trace
+        name: Building ${{ matrix.target }} for ${{ matrix.os }}
 
         strategy:
             fail-fast: false
             matrix:
+                target: [release, development]
                 os:
                     - ubuntu-latest
                     - windows-latest
+
+        env:
+            RUST_BACKTRACE: full
+            PAGOO_LOG: trace
+            RELEASE: ${{ (matrix.target == 'release' && '1') || '0' }}
 
         runs-on: ${{ matrix.os }}
         steps:
