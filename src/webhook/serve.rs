@@ -100,7 +100,7 @@ mod tests {
     fn test_command_with_json() -> anyhow::Result<()> {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 
-        let client = utils::get_test_http_client()?;
+        let mut http_server = utils::start_server()?;
 
         let req = Request::builder()
             .method("POST")
@@ -108,7 +108,8 @@ mod tests {
             .body(Body::from(r#"{"repository":{"url":"https://github.com/my-org/my-repo"},"action":"published"}"#))?
         ;
 
-        let (res, body) = tokio_runtime.block_on(client.request(req))?.into_parts();
+        let (res, body) = tokio_runtime.block_on(utils::get_test_http_client()?.request(req))?.into_parts();
+        http_server.kill()?;
 
         let status = res.status;
         assert_eq!(status, hyper::StatusCode::CREATED);
@@ -118,8 +119,6 @@ mod tests {
 
         assert_eq!("Matched! Actions to add: [\"echo \\\"success!\\\"\"]\n", body_as_string);
 
-        utils::teardown()?;
-
         Ok(())
     }
 
@@ -127,6 +126,8 @@ mod tests {
     #[serial_test::serial]
     fn test_command_with_headers() -> anyhow::Result<()> {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+
+        let mut http_server = utils::start_server()?;
 
         let client = utils::get_test_http_client()?;
 
@@ -139,6 +140,7 @@ mod tests {
         ;
 
         let (res, body) = tokio_runtime.block_on(client.request(req))?.into_parts();
+        http_server.kill()?;
 
         let status = res.status;
         assert_eq!(status, hyper::StatusCode::CREATED);
@@ -147,8 +149,6 @@ mod tests {
         let body_as_string = String::from_utf8(body_bytes)?;
 
         assert_eq!("Matched! Actions to add: [\"echo \\\"success!\\\"\"]\n", body_as_string);
-
-        utils::teardown()?;
 
         Ok(())
     }

@@ -1,53 +1,22 @@
 use hyper::Client;
 use std::io::BufReader;
 use std::io::Read;
-use std::mem::ManuallyDrop;
+use std::process::Child;
 use std::process::Command;
 use std::process::Stdio;
 use crate::APPLICATION_NAME;
 
-struct PID {
-    pub pid: ManuallyDrop<u32>,
-}
-impl PID {
-    fn exit(&mut self) -> Result<(), anyhow::Error> {
-        unsafe {
-            let pid: u32 = ManuallyDrop::take(&mut self.pid);
-
-            self.pid = ManuallyDrop::new(0);
-
-            kill_process(&pid.to_string())?;
-        }
-
-        Ok(())
-    }
-}
-
-static mut SERVER_PID: PID = PID { pid: ManuallyDrop::new(0) };
-
-pub(crate) fn teardown() -> Result<(), anyhow::Error> {
-    unsafe {
-        SERVER_PID.exit()?;
-    }
-
-    Ok(())
+pub(crate) fn start_server() -> Result<Child, anyhow::Error> {
+    wait_for_http_server_startup(&mut get_serve_webhook_command())
 }
 
 pub(crate) fn get_test_http_client() -> anyhow::Result<Client<hyper::client::HttpConnector>> {
-    ensure_server_started()?;
-
     let builder = Client::builder();
 
     Ok(builder.build_http())
 }
 
-fn ensure_server_started() -> anyhow::Result<()> {
-    wait_for_http_server_startup(&mut get_serve_webhook_command())?;
-
-    Ok(())
-}
-
-fn wait_for_http_server_startup(command: &mut Command) -> Result<(), anyhow::Error> {
+fn wait_for_http_server_startup(command: &mut Command) -> Result<std::process::Child, anyhow::Error> {
     let mut child_command = command.spawn()?;
 
     let stderr = child_command.stderr.take().ok_or(anyhow::anyhow!("Could not get stderr from child process"))?;
@@ -80,14 +49,10 @@ fn wait_for_http_server_startup(command: &mut Command) -> Result<(), anyhow::Err
         }
     }
 
-    unsafe {
-        SERVER_PID.pid = ManuallyDrop::new(child_command.id());
-    }
-
-    Ok(())
+    Ok(child_command)
 }
 
-fn get_serve_webhook_command() -> Command {
+pub(crate) fn get_serve_webhook_command() -> Command {
     let extension = if cfg!(target_os = "windows") { ".exe" } else { "" };
     let target = option_env!("OPT_LEVEL").unwrap_or("debug");
     let command_name = format!("target/{}/{}{}", target, APPLICATION_NAME, extension);
@@ -104,43 +69,4 @@ fn get_serve_webhook_command() -> Command {
     ;
 
     command
-}
-
-#[cfg(target_family = "windows")]
-pub(crate) fn kill_process(pid: &str) -> Result<(), anyhow::Error> {
-    let mut child = Command::new("taskkill")
-        .arg("/T") // Stops process tree
-        .arg("/F") // Force stop
-        .arg("/PID")
-        .arg(pid)
-        .stderr(Stdio::null())
-        .stdout(Stdio::null())
-        .spawn()?;
-
-    let exit_status = child.wait()?;
-
-    match exit_status.code() {
-        Some(0) => Ok(()),
-        Some(code) => Err(anyhow::anyhow!("Could not stop process. Exit code: {}", code)),
-        None => Err(anyhow::anyhow!("Could not stop process. Exit status was None")),
-    }
-}
-
-#[cfg(not(target_family = "windows"))]
-pub(crate) fn kill_process(pid: &str) -> Result<(), anyhow::Error> {
-    let mut child = Command::new("kill")
-        .stderr(Stdio::null())
-        .stdout(Stdio::null())
-        .arg("-TERM")
-        .arg("--")
-        .arg(pid)
-        .spawn()?;
-
-    let exit_status = child.wait()?;
-
-    match exit_status.code() {
-        Some(0) => Ok(()),
-        Some(code) => Err(anyhow::anyhow!("Could not stop process. Exit code: {}", code)),
-        None => Err(anyhow::anyhow!("Could not stop process. Exit status was None")),
-    }
 }
