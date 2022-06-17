@@ -96,6 +96,7 @@ mod tests {
     use crate::tests::utils;
 
     #[test]
+    #[serial_test::serial]
     fn test_command_with_json() -> anyhow::Result<()> {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 
@@ -117,10 +118,13 @@ mod tests {
 
         assert_eq!("Matched! Actions to add: [\"echo \\\"success!\\\"\"]\n", body_as_string);
 
+        utils::teardown()?;
+
         Ok(())
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_command_with_headers() -> anyhow::Result<()> {
         let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
 
@@ -143,6 +147,8 @@ mod tests {
         let body_as_string = String::from_utf8(body_bytes)?;
 
         assert_eq!("Matched! Actions to add: [\"echo \\\"success!\\\"\"]\n", body_as_string);
+
+        utils::teardown()?;
 
         Ok(())
     }
