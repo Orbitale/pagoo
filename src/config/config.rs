@@ -113,7 +113,7 @@ mod tests {
         assert_eq!(1, config.webhooks.len());
         let webhook = &config.webhooks[0];
         assert_eq!("my_webhook_name", webhook.name);
-        assert_eq!("curl -i ...\nmy_binary --verbose ...", webhook.actions_to_execute);
+        assert_eq!("echo \"success!\"", webhook.actions_to_execute);
         assert_eq!(true, webhook.matchers_strategy.is_some());
         assert_eq!(MatchersStrategy::One, webhook.matchers_strategy.unwrap());
 

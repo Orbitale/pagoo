@@ -19,7 +19,7 @@
                     }
                 }
             ],
-            "actions-to-execute": "curl -i ...\nmy_binary --verbose ..."
+            "actions-to-execute": "echo \"success!\""
         }
     ]
 }

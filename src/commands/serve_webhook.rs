@@ -3,7 +3,6 @@ use clap::ArgMatches;
 use clap::Command as ClapCommand;
 use clap::Arg;
 use crate::CommandHandler;
-
 use crate::webhook::serve::DEFAULT_PORT;
 use crate::webhook::serve::DEFAULT_HOST;
 

@@ -11,6 +11,10 @@ use std::process::Termination;
 use std::process::ExitCode;
 use crate::commands::serve_webhook;
 
+pub(crate) mod actions {
+    pub(crate) mod queue;
+}
+
 pub(crate) mod config {
     pub(crate) mod config;
 }
@@ -83,7 +87,10 @@ pub(crate) struct CommandHandler {
 }
 
 impl CommandHandler {
-    pub fn new(command_definition: ClapCommand<'static>, executor: Box<dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>>) -> Self {
+    pub fn new(
+        command_definition: ClapCommand<'static>,
+        executor: Box<dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>>
+    ) -> Self {
         Self { command_definition, executor }
     }
 }

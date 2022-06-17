@@ -5,6 +5,7 @@ use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::HttpServer;
 use actix_web::Responder;
+use crate::actions::queue::add_actions_to_queue;
 use crate::config::config;
 use crate::config::config::Config;
 use crate::config::config::MatchersStrategy;
@@ -44,9 +45,11 @@ async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data
     let actions_to_add = get_actions_to_execute(config, &body_as_string, headers);
 
     if actions_to_add.len() > 0 {
-        info!("Actions to add: {:?}", &actions_to_add);
+        let msg = format!("Matched! Actions to add: {:?}\n", &actions_to_add);
 
-        return HttpResponse::Created().body(format!("Matched! Actions to add: {:?}\n", &actions_to_add));
+        add_actions_to_queue(actions_to_add).unwrap();
+
+        return HttpResponse::Created().body(msg);
     }
 
     HttpResponse::BadRequest().body(format!("Request matched no webhook.\nBody:\n{}\n", body_as_string))
@@ -61,7 +64,10 @@ fn get_actions_to_execute(config: &Config, body_as_string: &String, headers: &He
         let mut number_matching = 0;
 
         for matcher in &webhook.matchers {
-            if match_headers(headers, matcher) || match_json(body_as_string, matcher) {
+            if
+                match_headers(headers, matcher)
+                || match_json(body_as_string, matcher)
+            {
                 number_matching += 1;
             }
         }
@@ -109,7 +115,7 @@ mod tests {
         let body_bytes = tokio_runtime.block_on(hyper::body::to_bytes(body))?.to_vec();
         let body_as_string = String::from_utf8(body_bytes)?;
 
-        assert_eq!("Matched! Actions to add: [\"curl -i ...\\nmy_binary --verbose ...\"]\n", body_as_string);
+        assert_eq!("Matched! Actions to add: [\"echo \\\"success!\\\"\"]\n", body_as_string);
 
         Ok(())
     }
@@ -136,7 +142,7 @@ mod tests {
         let body_bytes = tokio_runtime.block_on(hyper::body::to_bytes(body))?.to_vec();
         let body_as_string = String::from_utf8(body_bytes)?;
 
-        assert_eq!("Matched! Actions to add: [\"curl -i ...\\nmy_binary --verbose ...\"]\n", body_as_string);
+        assert_eq!("Matched! Actions to add: [\"echo \\\"success!\\\"\"]\n", body_as_string);
 
         Ok(())
     }
