@@ -1,25 +1,25 @@
 use actix_web::http::header::HeaderMap;
 use crate::config::config::Matcher;
 
-pub(crate) fn match_headers(headers: &HeaderMap, matcher: &Matcher) -> bool {
+pub(crate) fn match_headers(headers: &HeaderMap, matcher: &Matcher) -> Result<bool, anyhow::Error> {
     if matcher.match_headers.is_none() {
-        return false;
+        return Ok(false);
     }
 
-    let matcher_headers = matcher.match_headers.as_ref().unwrap();
+    let matcher_headers = matcher.match_headers.as_ref().ok_or(anyhow::anyhow!("No match_headers"))?;
     let number_of_headers = matcher_headers.len();
     let mut headers_matching = 0;
 
     for (header_name, header_value) in matcher_headers {
         if headers.contains_key(header_name) {
-            let header_value_as_string = headers.get(header_name).unwrap().to_str().unwrap();
+            let header_value_as_string = headers.get(header_name).ok_or(anyhow::anyhow!("Could not get header by name \"{}\".", header_name))?.to_str()?;
             if header_value_as_string == header_value {
                 headers_matching += 1
             }
         }
     }
 
-    return headers_matching == number_of_headers;
+    return Ok(headers_matching == number_of_headers);
 }
 
 #[cfg(test)]
@@ -43,7 +43,7 @@ mod tests {
             match_json_body: None,
         };
 
-        assert_eq!(match_headers(&headers, &matcher), true);
+        assert_eq!(match_headers(&headers, &matcher).unwrap(), true);
     }
 
     #[test]
@@ -60,6 +60,6 @@ mod tests {
             match_json_body: None,
         };
 
-        assert_eq!(match_headers(&headers, &matcher), false);
+        assert_eq!(match_headers(&headers, &matcher).unwrap(), false);
     }
 }

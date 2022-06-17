@@ -4,7 +4,6 @@ use actix_web::http::header::HeaderMap;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::HttpServer;
-use actix_web::Responder;
 use crate::actions::queue::add_actions_to_queue;
 use crate::config::config;
 use crate::config::config::Config;
@@ -36,18 +35,32 @@ pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: O
         .await
 }
 
-async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data<Config>) -> impl Responder {
-    let body_as_string = String::from_utf8(body_bytes.to_vec()).unwrap();
+async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data<Config>) -> HttpResponse {
+    let body_as_string = String::from_utf8(body_bytes.to_vec());
+    if body_as_string.is_err() {
+        return HttpResponse::BadRequest().body("Invalid body.");
+    }
+    let body_as_string = body_as_string.unwrap();
+
     let headers = request.headers();
 
     let config = config.get_ref();
 
     let actions_to_add = get_actions_to_execute(config, &body_as_string, headers);
+    if actions_to_add.is_err() {
+        return HttpResponse::BadRequest().body("Could not get actions to execute from this request.");
+    }
+    let actions_to_add = actions_to_add.unwrap();
 
     if actions_to_add.len() > 0 {
         let msg = format!("Matched! Actions to add: {:?}\n", &actions_to_add);
 
-        add_actions_to_queue(actions_to_add).unwrap();
+
+        let add_actions_result = add_actions_to_queue(actions_to_add);
+        if add_actions_result.is_err() {
+            return HttpResponse::InternalServerError().body("Could not add actions to queue");
+        }
+
 
         return HttpResponse::Created().body(msg);
     }
@@ -55,7 +68,7 @@ async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data
     HttpResponse::BadRequest().body(format!("Request matched no webhook.\nBody:\n{}\n", body_as_string))
 }
 
-fn get_actions_to_execute(config: &Config, body_as_string: &String, headers: &HeaderMap) -> Vec<String> {
+fn get_actions_to_execute(config: &Config, body_as_string: &String, headers: &HeaderMap) -> Result<Vec<String>, anyhow::Error> {
     let mut actions_to_add: Vec<String> = Vec::new();
 
     for webhook in &config.webhooks {
@@ -65,8 +78,8 @@ fn get_actions_to_execute(config: &Config, body_as_string: &String, headers: &He
 
         for matcher in &webhook.matchers {
             if
-                match_headers(headers, matcher)
-                || match_json(body_as_string, matcher)
+                match_headers(headers, matcher)?
+                || match_json(body_as_string, matcher)?
             {
                 number_matching += 1;
             }
@@ -86,70 +99,48 @@ fn get_actions_to_execute(config: &Config, body_as_string: &String, headers: &He
         }
     }
 
-    actions_to_add
+    Ok(actions_to_add)
 }
 
 #[cfg(test)]
 mod tests {
-    use hyper::Body;
-    use hyper::Request;
+    use super::*;
+    use actix_web::http;
+    use actix_web::test::TestRequest;
+    use actix_web::web;
     use crate::tests::utils;
 
-    #[test]
-    #[serial_test::serial]
-    fn test_command_with_json() -> anyhow::Result<()> {
-        let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+    #[actix_web::test]
+    async fn test_webhook_with_json() {
+        let body_str = r#"{"repository":{"url":"https://github.com/my-org/my-repo"},"action":"published"}"#.as_bytes();
+        let body_webhook = web::Bytes::from_static(body_str.clone());
 
-        let mut http_server = utils::start_server()?;
-
-        let req = Request::builder()
-            .method("POST")
+        let req = TestRequest::default()
             .uri("http://127.0.0.1:8000/webhook")
-            .body(Body::from(r#"{"repository":{"url":"https://github.com/my-org/my-repo"},"action":"published"}"#))?
-        ;
+            .set_payload(body_str.clone())
+            .to_http_request();
 
-        let (res, body) = tokio_runtime.block_on(utils::get_test_http_client()?.request(req))?.into_parts();
-        http_server.kill()?;
+        let config = utils::get_sample_config();
+        let config = web::Data::new(config);
 
-        let status = res.status;
-        assert_eq!(status, hyper::StatusCode::CREATED);
+        let res = webhook(req, body_webhook, config).await;
 
-        let body_bytes = tokio_runtime.block_on(hyper::body::to_bytes(body))?.to_vec();
-        let body_as_string = String::from_utf8(body_bytes)?;
-
-        assert_eq!("Matched! Actions to add: [\"echo \\\"success!\\\"\"]\n", body_as_string);
-
-        Ok(())
+        assert_eq!(res.status(), http::StatusCode::CREATED);
     }
 
-    #[test]
-    #[serial_test::serial]
-    fn test_command_with_headers() -> anyhow::Result<()> {
-        let tokio_runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
-
-        let mut http_server = utils::start_server()?;
-
-        let client = utils::get_test_http_client()?;
-
-        let req = Request::builder()
-            .method("POST")
+    #[actix_web::test]
+    async fn test_command_with_headers() {
+        let req = TestRequest::default()
             .uri("http://127.0.0.1:8000/webhook")
-            .header("X-GitHub-Event", "release")
-            .header("X-GitHub-delivery", "12345")
-            .body(Body::from(r#""#))?
-        ;
+            .insert_header(("X-GitHub-Event", "release"))
+            .insert_header(("X-GitHub-delivery", "12345"))
+            .to_http_request();
 
-        let (res, body) = tokio_runtime.block_on(client.request(req))?.into_parts();
-        http_server.kill()?;
+        let config = utils::get_sample_config();
+        let config = web::Data::new(config);
 
-        let status = res.status;
-        assert_eq!(status, hyper::StatusCode::CREATED);
+        let res = webhook(req, web::Bytes::new(), config).await;
 
-        let body_bytes = tokio_runtime.block_on(hyper::body::to_bytes(body))?.to_vec();
-        let body_as_string = String::from_utf8(body_bytes)?;
-
-        assert_eq!("Matched! Actions to add: [\"echo \\\"success!\\\"\"]\n", body_as_string);
-
-        Ok(())
+        assert_eq!(res.status(), http::StatusCode::CREATED);
     }
 }
