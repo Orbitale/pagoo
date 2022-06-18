@@ -15,6 +15,10 @@ pub(crate) mod actions {
     pub(crate) mod queue;
 }
 
+pub(crate) mod api {
+    pub(crate) mod webhook;
+}
+
 pub(crate) mod config {
     pub(crate) mod config;
 }
