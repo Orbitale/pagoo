@@ -38,8 +38,17 @@ build-tests: build-test # Alias
 .PHONY: build-tests
 
 test: ## Run the tests			(alias: tests)
-	cargo test --no-fail-fast $(TARGET) -- --show-output --nocapture
+	@export RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="target/coverage/pagoo-%p-%m.profraw" \
+	&& cargo test --no-fail-fast $(TARGET) -- --show-output --nocapture
 .PHONY: test
+
+coverage: ## Generate code coverage based on the test output
+	@if [[ -z default.profraw ]]; then \
+		echo "No coverage data available" ;\
+		exit 1 ;\
+	fi
+	grcov target/coverage/ -s . --binary-path ./target/debug/ -t html --branch --ignore-not-existing -o ./target/coverage-html/
+.PHONY: coverage
 
 tests: test # Alias
 .PHONY: tests
