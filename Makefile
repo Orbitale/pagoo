@@ -47,7 +47,18 @@ coverage: ## Generate code coverage based on the test output
 		echo "No coverage data available" ;\
 		exit 1 ;\
 	fi
-	grcov target/coverage/ -s . --binary-path ./target/debug/ -t html --branch --ignore-not-existing -o ./target/coverage-html/
+
+	@grcov \
+		target/coverage/ \
+		--excl-line "#\[cfg\(test" \
+		--excl-br-start "mod tests \{" --excl-start "mod tests \{" \
+		-s . \
+		--binary-path ./target/debug/ \
+		-t html \
+		--branch \
+		--ignore-not-existing \
+		-o ./target/coverage-html/ \
+
 .PHONY: coverage
 
 tests: test # Alias

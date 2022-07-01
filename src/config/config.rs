@@ -96,7 +96,6 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    #[cfg(test)]
     fn get_sample_file_path() -> PathBuf {
         std::env::current_dir().unwrap().join("samples/json_sample.json")
     }

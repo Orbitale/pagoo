@@ -6,7 +6,7 @@ pub(crate) fn match_headers(headers: &HeaderMap, matcher: &Matcher) -> Result<bo
         return Ok(false);
     }
 
-    let matcher_headers = matcher.match_headers.as_ref().ok_or(anyhow::anyhow!("No match_headers"))?;
+    let matcher_headers = matcher.match_headers.as_ref().unwrap();
     let number_of_headers = matcher_headers.len();
     let mut headers_matching = 0;
 
