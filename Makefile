@@ -38,27 +38,35 @@ build-tests: build-test # Alias
 .PHONY: build-tests
 
 test: ## Run the tests			(alias: tests)
+	@rm -rf target/coverage/
+
 	@export RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="target/coverage/pagoo-%p-%m.profraw" \
 	&& cargo test --no-fail-fast $(TARGET) -- --show-output --nocapture
 .PHONY: test
 
-coverage: ## Generate code coverage based on the test output
+COVERAGE_FLAGS=-t html -o ./target/coverage-html/
+ifeq ($(COVERAGE),lcov)
+	COVERAGE_FLAGS=-t lcov -o ./target/lcov.info
+endif
+
+coverage: ## Generate code coverage based on the test output. You can specify LCOV coverage with "COVERAGE=lcov"
 	@if [[ -z default.profraw ]]; then \
 		echo "No coverage data available" ;\
 		exit 1 ;\
 	fi
 
-	@grcov \
+	grcov \
 		target/coverage/ \
 		--excl-line "#\[cfg\(test" \
 		--excl-br-start "mod tests \{" --excl-start "mod tests \{" \
+		--ignore src/logging.rs \
+		--ignore src/commands/* \
+		--ignore src/webhook/* \
 		-s . \
 		--binary-path ./target/debug/ \
-		-t html \
 		--branch \
 		--ignore-not-existing \
-		-o ./target/coverage-html/ \
-
+		$(COVERAGE_FLAGS)
 .PHONY: coverage
 
 tests: test # Alias
