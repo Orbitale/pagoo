@@ -1,16 +1,20 @@
 RELEASE ?= 0
 
-##
-##==================
-## Project commands
-##==================
-##
+# Helper variables for display
+_INFO := "\033[32m[%s]\033[0m %s\n" # Green text
+_ERROR := "\033[31m[%s]\033[0m %s\n" # Red text
 
 ifeq ($(RELEASE),1)
 	TARGET=--release
 else
 	TARGET=
 endif
+
+##
+##==================
+## Project commands
+##==================
+##
 
 .DEFAULT_GOAL := help
 help: ## Show this help message
@@ -31,31 +35,46 @@ build: ## Build the project
 ##=========
 ##
 build-test: ## Build the test modules	(alias: build-tests)
-	cargo test --no-run $(TARGET)
+	@printf $(_INFO) "INFO" "Building test modules..."
+	@cargo test --no-run $(TARGET)
+	@printf $(_INFO) "INFO" "✅ Done!"
 .PHONY: build-tests
 
 build-tests: build-test # Alias
 .PHONY: build-tests
 
-test: ## Run the tests			(alias: tests)
+test: build-test ## Run the tests			(alias: tests)
+	@printf $(_INFO) "INFO" "Removing coverage artifacts..."
 	@rm -rf target/coverage/
 
 	@export RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="target/coverage/pagoo-%p-%m.profraw" \
-	&& cargo test --no-fail-fast $(TARGET) -- --show-output --nocapture
+		&& cargo test --no-fail-fast $(TARGET) -- --show-output --nocapture
 .PHONY: test
 
+tests: test # Alias
+.PHONY: tests
+
+COVERAGE=html
 COVERAGE_FLAGS=-t html -o ./target/coverage-html/
 ifeq ($(COVERAGE),lcov)
 	COVERAGE_FLAGS=-t lcov -o ./target/lcov.info
 endif
 
 coverage: ## Generate code coverage based on the test output. You can specify LCOV coverage with "COVERAGE=lcov"
-	@if [[ -z default.profraw ]]; then \
-		echo "No coverage data available" ;\
+	@if [[ -n "$(find ./target/coverage/ -maxdepth 1 -name '*.profraw' -print -quit)" ]]; then \
+		printf $(_ERROR) "ERROR" "No coverage data available..." ;\
 		exit 1 ;\
 	fi
 
-	grcov \
+	@if ! command -v grcov &> /dev/null; then \
+		printf $(_ERROR) "ERROR" "The grcov program does not seem to be installed on your machine." ;\
+		printf $(_ERROR) "ERROR" "You can install it via \"cargo install grcov\" to generate code coverage." ;\
+		exit 1 ;\
+	fi
+
+	@printf $(_INFO) "INFO" "Generating $(COVERAGE) coverage..."
+
+	@grcov \
 		target/coverage/ \
 		--excl-line "#\[cfg\(test" \
 		--excl-br-start "mod tests \{" --excl-start "mod tests \{" \
@@ -67,17 +86,16 @@ coverage: ## Generate code coverage based on the test output. You can specify LC
 		--branch \
 		--ignore-not-existing \
 		$(COVERAGE_FLAGS)
-.PHONY: coverage
 
-tests: test # Alias
-.PHONY: tests
+	@printf $(_INFO) "INFO" "✅ Done!"
+.PHONY: coverage
 
 ##
 ##----
 ##
 ##Note:
-##All commands are executed in DEV mode.
-##To run the commands in RELEASE mode, use the "RELEASE=1" env var.
+##All commands are executed in "debug" mode.
+##To run the commands in "release" mode, use the "RELEASE=1" env var.
 ##
 ##For example:
 ##$ make RELEASE=1 build
