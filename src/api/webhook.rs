@@ -58,7 +58,7 @@ mod tests {
             .set_payload(body_str.clone())
             .to_http_request();
 
-        let config = utils::get_sample_config();
+        let config = utils::get_sample_config().unwrap();
         let config = web::Data::new(config);
 
         let res = webhook(req, body_webhook, config).await;
@@ -74,7 +74,7 @@ mod tests {
             .insert_header(("X-GitHub-delivery", "12345"))
             .to_http_request();
 
-        let config = utils::get_sample_config();
+        let config = utils::get_sample_config().unwrap();
         let config = web::Data::new(config);
 
         let res = webhook(req, web::Bytes::new(), config).await;
@@ -96,7 +96,7 @@ mod tests {
             .set_payload(request_body.clone())
             .to_http_request();
 
-        let config = utils::get_sample_config();
+        let config = utils::get_sample_config().unwrap();
         let config = web::Data::new(config);
 
         let res = webhook(req.clone(), request_body, config).await;

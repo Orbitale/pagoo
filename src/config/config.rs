@@ -8,8 +8,6 @@ pub(crate) struct Config {
     pub(crate) webhooks: Vec<Webhook>,
 }
 
-//
-
 #[derive(Debug, Default, Deserialize)]
 pub(crate) struct Webhook {
     pub(crate) name: String,
@@ -20,8 +18,6 @@ pub(crate) struct Webhook {
     pub(crate) actions_to_execute: String,
 }
 
-//
-
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
 pub(crate) enum MatchersStrategy {
     #[serde(rename = "all")]
@@ -29,8 +25,6 @@ pub(crate) enum MatchersStrategy {
     #[serde(rename = "one")]
     One,
 }
-
-//
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Matcher {
@@ -40,21 +34,9 @@ pub(crate) struct Matcher {
     pub(crate) match_headers: Option<HashMap<String, String>>,
 }
 
-//
-//
-//
-//
-//
-//
-
 impl Default for MatchersStrategy {
     fn default() -> Self {
         MatchersStrategy::All
-    }
-}
-impl Default for &MatchersStrategy {
-    fn default() -> Self {
-        &MatchersStrategy::All
     }
 }
 
@@ -67,28 +49,24 @@ impl Display for MatchersStrategy {
     }
 }
 
-//
-
-pub(crate) fn get_config(config_file: Option<&str>) -> Config {
+pub(crate) fn get_config(config_file: Option<&str>) -> Result<Config, anyhow::Error> {
     let default_file_name = format!(".{}.json", APPLICATION_NAME.to_ascii_lowercase());
     let config_file_name = config_file.unwrap_or(default_file_name.as_str());
     let config_file_path = std::path::Path::new(config_file_name);
 
     if !config_file_path.is_file() {
-        if config_file.is_some() {
-            error!("Config file not found: {}", config_file_name);
+        return if config_file.is_some() {
+            Err(anyhow::anyhow!("Config file not found: {}", config_file_name))
         } else {
-            error!("No config file specified, could not find a default one.");
-            error!("You can create a {} file in this directory to configure the application.", default_file_name);
+            Err(anyhow::anyhow!("No config file specified, could not find a default one. You can create a \"{}\" file in this directory to configure the application.", default_file_name))
         }
-        std::process::exit(1);
     }
 
     let config_file_content = std::fs::read_to_string(config_file_path).unwrap();
 
     let config: Config = serde_json::from_str(&config_file_content).unwrap();
 
-    config
+    Ok(config)
 }
 
 #[cfg(test)]
@@ -101,12 +79,41 @@ mod tests {
     }
 
     #[test]
+    fn test_matching_strategy_default() {
+        assert_eq!(MatchersStrategy::default(), MatchersStrategy::All);
+    }
+
+    #[test]
+    fn test_matching_strategy_display_one() {
+        assert_eq!(format!("{}", MatchersStrategy::One), "one");
+    }
+
+    #[test]
+    fn test_matching_strategy_display_all() {
+        assert_eq!(format!("{}", MatchersStrategy::All), "all");
+    }
+
+    #[test]
+    fn test_inexistent_file_with_no_argument() {
+        let config = get_config(None);
+        assert!(config.is_err());
+        assert_eq!(config.unwrap_err().to_string(), "No config file specified, could not find a default one. You can create a \".pagoo.json\" file in this directory to configure the application.".to_string());
+    }
+
+    #[test]
+    fn test_inexistent_file_with_argument() {
+        let config = get_config(Some("some_inexistent_file.json"));
+        assert!(config.is_err());
+        assert_eq!(config.unwrap_err().to_string(), "Config file not found: some_inexistent_file.json".to_string());
+    }
+
+    #[test]
     fn test_config() {
         let sample_file = get_sample_file_path();
 
         assert_eq!(true, sample_file.is_file());
 
-        let config = get_config(Some(sample_file.to_str().unwrap()));
+        let config = get_config(Some(sample_file.to_str().unwrap())).unwrap();
 
         // Webhook
         assert_eq!(1, config.webhooks.len());

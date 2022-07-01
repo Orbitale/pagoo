@@ -8,7 +8,7 @@ pub(crate) fn from_request_parts(config: &Config, body_as_string: &String, heade
     let mut actions_to_add: Vec<String> = Vec::new();
 
     for webhook in &config.webhooks {
-        let strategy = webhook.matchers_strategy.as_ref().unwrap_or_default();
+        let strategy = webhook.matchers_strategy.clone().unwrap_or_default();
         let number_of_matchers = webhook.matchers.len();
         let mut number_matching = 0;
 
