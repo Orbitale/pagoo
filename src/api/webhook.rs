@@ -3,7 +3,7 @@ use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use crate::actions::queue::add_actions_to_queue;
 use crate::config::config::Config;
-use crate::matchers::get_actions;
+use crate::actions::get_actions;
 
 pub(crate) async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data<Config>) -> HttpResponse {
     let body_as_string = String::from_utf8(body_bytes.to_vec());
