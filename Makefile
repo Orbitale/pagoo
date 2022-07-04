@@ -10,6 +10,10 @@ else
 	TARGET=
 endif
 
+## Necessary for coverage, doesn't impact compile-time too much.
+RUSTFLAGS := -Cinstrument-coverage
+LLVM_PROFILE_FILE := target/coverage/pagoo-%p-%m.profraw
+
 ##
 ##==================
 ## Project commands
@@ -37,7 +41,7 @@ build: ## Build the project
 build-test: ## Build the test modules	(alias: build-tests)
 	@printf $(_INFO) "INFO" "Building test modules..."
 	@cargo test --no-run $(TARGET)
-	@printf $(_INFO) "INFO" "✅ Done!"
+	@printf $(_INFO) "INFO" "✅ Done building test modules!"
 .PHONY: build-tests
 
 build-tests: build-test # Alias
@@ -47,8 +51,7 @@ test: build-test ## Run the tests			(alias: tests)
 	@printf $(_INFO) "INFO" "Removing coverage artifacts..."
 	@rm -rf target/coverage/
 
-	@export RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="target/coverage/pagoo-%p-%m.profraw" \
-		&& cargo test --no-fail-fast $(TARGET) -- --show-output --nocapture
+	@cargo test --no-fail-fast $(TARGET) -- --show-output --nocapture
 .PHONY: test
 
 tests: test # Alias
