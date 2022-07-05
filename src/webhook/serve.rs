@@ -3,6 +3,8 @@ use actix_web::App;
 use actix_web::HttpServer;
 use std::io::Error;
 use std::io::ErrorKind;
+use std::sync::Mutex;
+use crate::actions::queue::Queue;
 use crate::config::config;
 
 pub(crate) const DEFAULT_PORT: &str = "8000";
@@ -25,10 +27,12 @@ pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: O
     }
 
     let config = web::Data::new(config.unwrap());
+    let queue_data = web::Data::new(Mutex::new(Queue::new()));
 
     HttpServer::new(move || {
         App::new()
             .app_data(config.clone())
+            .app_data(queue_data.clone())
             .service(web::resource("/webhook").to(crate::api::webhook::webhook))
     })
         .bind((host, port_as_int))?

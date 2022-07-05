@@ -39,9 +39,7 @@ pub(crate) mod webhook {
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
-    pub(crate) mod utils;
-}
+pub(crate) mod test_utils;
 
 mod logging;
 

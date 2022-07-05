@@ -1,3 +1,5 @@
+SHELL=bash
+
 RELEASE ?= 0
 
 # Helper variables for display
@@ -10,9 +12,9 @@ else
 	TARGET=
 endif
 
-## Necessary for coverage, doesn't impact compile-time too much.
-RUSTFLAGS := -Cinstrument-coverage
-LLVM_PROFILE_FILE := target/coverage/pagoo-%p-%m.profraw
+## Necessary for coverage, doesn't impact compile-time too much (yet?).
+export RUSTFLAGS := -Cinstrument-coverage
+export LLVM_PROFILE_FILE := target/coverage/pagoo-%p-%m.profraw
 
 ##
 ##==================
@@ -38,19 +40,19 @@ build: ## Build the project
 ## Testing
 ##=========
 ##
+
 build-test: ## Build the test modules	(alias: build-tests)
 	@printf $(_INFO) "INFO" "Building test modules..."
 	@cargo test --no-run $(TARGET)
 	@printf $(_INFO) "INFO" "✅ Done building test modules!"
-.PHONY: build-tests
+.PHONY: build-test
 
 build-tests: build-test # Alias
 .PHONY: build-tests
 
 test: build-test ## Run the tests			(alias: tests)
 	@printf $(_INFO) "INFO" "Removing coverage artifacts..."
-	@rm -rf target/coverage/
-
+	@rm -rf target/coverage/*
 	@cargo test --no-fail-fast $(TARGET) -- --show-output --nocapture
 .PHONY: test
 

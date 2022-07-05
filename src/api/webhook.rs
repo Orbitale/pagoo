@@ -1,11 +1,17 @@
 use actix_web::web;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
-use crate::actions::queue::add_actions_to_queue;
+use std::sync::Mutex;
+use crate::actions::queue::Queue;
 use crate::config::config::Config;
 use crate::actions::get_actions;
 
-pub(crate) async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config: web::Data<Config>) -> HttpResponse {
+pub(crate) async fn webhook(
+    request: HttpRequest,
+    body_bytes: web::Bytes,
+    config: web::Data<Config>,
+    queue: web::Data<Mutex<Queue<String>>>,
+) -> HttpResponse {
     let body_as_string = String::from_utf8(body_bytes.to_vec());
     if body_as_string.is_err() {
         return HttpResponse::BadRequest().body("Invalid body.");
@@ -25,12 +31,8 @@ pub(crate) async fn webhook(request: HttpRequest, body_bytes: web::Bytes, config
     if actions_to_add.len() > 0 {
         let msg = format!("Matched! Actions to add: {:?}\n", &actions_to_add);
 
-
-        let add_actions_result = add_actions_to_queue(actions_to_add);
-        if add_actions_result.is_err() {
-            return HttpResponse::InternalServerError().body("Could not add actions to queue");
-        }
-
+        let mut lock = queue.lock().unwrap();
+        lock.add_actions(actions_to_add);
 
         return HttpResponse::Created().body(msg);
     }
@@ -46,7 +48,30 @@ mod tests {
     use actix_web::test::read_body;
     use actix_web::web;
     use super::*;
-    use crate::tests::utils;
+    use crate::test_utils;
+
+    #[actix_web::test]
+    async fn test_no_matcher() {
+        let body_str = r#"{"repository":{"url":"https://github.com/my-org/my-repo"},"action":"published"}"#;
+        let body_webhook = web::Bytes::from_static(body_str.as_bytes());
+
+        let req = TestRequest::default()
+            .uri("http://127.0.0.1:8000/webhook")
+            .set_payload(body_str.as_bytes())
+            .to_http_request();
+
+        let config = Config::default();
+        let config = web::Data::new(config);
+        let queue = web::Data::new(Mutex::new(Queue::new()));
+
+        let res = webhook(req.clone(), body_webhook, config, queue).await;
+
+        assert_eq!(res.status(), http::StatusCode::BAD_REQUEST);
+
+        let response_body = read_body(ServiceResponse::new(req, res)).await;
+
+        assert_eq!(response_body, format!("Request matched no webhook.\nBody:\n{}\n", body_str));
+    }
 
     #[actix_web::test]
     async fn test_webhook_with_json() {
@@ -58,10 +83,11 @@ mod tests {
             .set_payload(body_str.clone())
             .to_http_request();
 
-        let config = utils::get_sample_config().unwrap();
+        let config = test_utils::get_sample_config().unwrap();
         let config = web::Data::new(config);
+        let queue = web::Data::new(Mutex::new(Queue::new()));
 
-        let res = webhook(req, body_webhook, config).await;
+        let res = webhook(req, body_webhook, config, queue).await;
 
         assert_eq!(res.status(), http::StatusCode::CREATED);
     }
@@ -74,10 +100,11 @@ mod tests {
             .insert_header(("X-GitHub-delivery", "12345"))
             .to_http_request();
 
-        let config = utils::get_sample_config().unwrap();
+        let config = test_utils::get_sample_config().unwrap();
         let config = web::Data::new(config);
+        let queue = web::Data::new(Mutex::new(Queue::new()));
 
-        let res = webhook(req, web::Bytes::new(), config).await;
+        let res = webhook(req, web::Bytes::new(), config, queue).await;
 
         assert_eq!(res.status(), http::StatusCode::CREATED);
     }
@@ -96,10 +123,11 @@ mod tests {
             .set_payload(request_body.clone())
             .to_http_request();
 
-        let config = utils::get_sample_config().unwrap();
+        let config = test_utils::get_sample_config().unwrap();
         let config = web::Data::new(config);
+        let queue = web::Data::new(Mutex::new(Queue::new()));
 
-        let res = webhook(req.clone(), request_body, config).await;
+        let res = webhook(req.clone(), request_body, config, queue).await;
 
         assert_eq!(res.status(), http::StatusCode::BAD_REQUEST);
 
