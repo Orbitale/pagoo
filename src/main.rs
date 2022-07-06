@@ -12,7 +12,6 @@ use std::process::ExitCode;
 use crate::commands::serve_webhook;
 
 pub(crate) mod actions {
-    pub(crate) mod queue;
     pub(crate) mod get_actions;
 }
 

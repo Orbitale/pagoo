@@ -3,8 +3,7 @@ use actix_web::App;
 use actix_web::HttpServer;
 use std::io::Error;
 use std::io::ErrorKind;
-use std::sync::Mutex;
-use crate::actions::queue::Queue;
+use tokio::sync::mpsc;
 use crate::config::config;
 
 pub(crate) const DEFAULT_PORT: &str = "8000";
@@ -26,16 +25,28 @@ pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: O
         return Err(Error::new(ErrorKind::Other, err));
     }
 
+    let (sender, receiver) = mpsc::channel(8);
+
+    start_workers(receiver);
+
     let config = web::Data::new(config.unwrap());
-    let queue_data = web::Data::new(Mutex::new(Queue::new()));
+    let transmitter_data = web::Data::new(sender);
 
     HttpServer::new(move || {
         App::new()
             .app_data(config.clone())
-            .app_data(queue_data.clone())
+            .app_data(transmitter_data.clone())
             .service(web::resource("/webhook").to(crate::api::webhook::webhook))
     })
         .bind((host, port_as_int))?
         .run()
         .await
+}
+
+fn start_workers(mut receiver: mpsc::Receiver<Vec<String>>) {
+    tokio::spawn(async move {
+        while let Some(msg) = receiver.recv().await {
+            println!("Got message: {:?}", msg);
+        }
+    });
 }

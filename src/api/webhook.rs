@@ -1,8 +1,7 @@
 use actix_web::web;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
-use std::sync::Mutex;
-use crate::actions::queue::Queue;
+use tokio::sync::mpsc;
 use crate::config::config::Config;
 use crate::actions::get_actions;
 
@@ -10,7 +9,7 @@ pub(crate) async fn webhook(
     request: HttpRequest,
     body_bytes: web::Bytes,
     config: web::Data<Config>,
-    queue: web::Data<Mutex<Queue<String>>>,
+    queue_sender: web::Data<mpsc::Sender<Vec<String>>>,
 ) -> HttpResponse {
     let body_as_string = String::from_utf8(body_bytes.to_vec());
     if body_as_string.is_err() {
@@ -31,8 +30,14 @@ pub(crate) async fn webhook(
     if actions_to_add.len() > 0 {
         let msg = format!("Matched! Actions to add: {:?}\n", &actions_to_add);
 
-        let mut lock = queue.lock().unwrap();
-        lock.add_actions(actions_to_add);
+        let sender_response = queue_sender.send(actions_to_add).await;
+
+        if sender_response.is_err() {
+            error!("Could not send message to queue: {:?}", sender_response.unwrap_err());
+            return HttpResponse::InternalServerError().body("Could not send message to queue.");
+        }
+
+        let _ = sender_response.unwrap();
 
         return HttpResponse::Created().body(msg);
     }
@@ -60,11 +65,12 @@ mod tests {
             .set_payload(body_str.as_bytes())
             .to_http_request();
 
-        let config = Config::default();
-        let config = web::Data::new(config);
-        let queue = web::Data::new(Mutex::new(Queue::new()));
+        let (sender, _) = mpsc::channel(8);
 
-        let res = webhook(req.clone(), body_webhook, config, queue).await;
+        let config = web::Data::new(Config::default());
+        let queue_sender = web::Data::new(sender);
+
+        let res = webhook(req.clone(), body_webhook, config, queue_sender).await;
 
         assert_eq!(res.status(), http::StatusCode::BAD_REQUEST);
 
@@ -83,13 +89,21 @@ mod tests {
             .set_payload(body_str.clone())
             .to_http_request();
 
+        let (sender, mut receiver) = mpsc::channel(8);
+
         let config = test_utils::get_sample_config().unwrap();
         let config = web::Data::new(config);
-        let queue = web::Data::new(Mutex::new(Queue::new()));
+        let queue_sender = web::Data::new(sender);
 
-        let res = webhook(req, body_webhook, config, queue).await;
+        let res = webhook(req, body_webhook, config, queue_sender).await;
 
         assert_eq!(res.status(), http::StatusCode::CREATED);
+
+        let res = receiver.recv().await;
+        assert!(res.is_some());
+        let res = res.unwrap();
+
+        assert_eq!(vec!["echo \"success!\"".to_string()], res);
     }
 
     #[actix_web::test]
@@ -100,18 +114,25 @@ mod tests {
             .insert_header(("X-GitHub-delivery", "12345"))
             .to_http_request();
 
+        let (sender, mut receiver) = mpsc::channel(8);
+
         let config = test_utils::get_sample_config().unwrap();
         let config = web::Data::new(config);
-        let queue = web::Data::new(Mutex::new(Queue::new()));
+        let queue_sender = web::Data::new(sender);
 
-        let res = webhook(req, web::Bytes::new(), config, queue).await;
+        let res = webhook(req, web::Bytes::new(), config, queue_sender).await;
 
         assert_eq!(res.status(), http::StatusCode::CREATED);
+
+        let res = receiver.recv().await;
+        assert!(res.is_some());
+        let res = res.unwrap();
+
+        assert_eq!(vec!["echo \"success!\"".to_string()], res);
     }
 
     #[actix_web::test]
     async fn test_invalid_body() {
-
         // Remove some unicode elements to create an invalid utf8 string
         let mut bytes: Vec<u8> = "🚀".as_bytes().into();
         bytes.remove(0);
@@ -123,11 +144,13 @@ mod tests {
             .set_payload(request_body.clone())
             .to_http_request();
 
+        let (sender, _) = mpsc::channel(8);
+
         let config = test_utils::get_sample_config().unwrap();
         let config = web::Data::new(config);
-        let queue = web::Data::new(Mutex::new(Queue::new()));
+        let queue_sender = web::Data::new(sender);
 
-        let res = webhook(req.clone(), request_body, config, queue).await;
+        let res = webhook(req.clone(), request_body, config, queue_sender).await;
 
         assert_eq!(res.status(), http::StatusCode::BAD_REQUEST);
 
