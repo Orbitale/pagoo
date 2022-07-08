@@ -27,6 +27,10 @@ help: ## Show this help message
 	@grep -E '(^[a-zA-Z_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf " \033[32m%-25s\033[0m%s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
 .PHONY: help
 
+run: ## Execute "cargo run". Use the "ARGS" var to specify the arguments
+	cargo run $(ARGS)
+.PHONY: run
+
 start-webhook: ## Start the release version of the webhook API
 	cargo run $(TARGET) -- --config-file samples/json_sample.json serve:webhook 2>&1
 .PHONY: start-webhook
@@ -94,6 +98,10 @@ coverage: ## Generate code coverage based on the test output. You can specify LC
 
 	@printf $(_INFO) "INFO" "✅ Done!"
 .PHONY: coverage
+
+curl-test:
+	@jq -c -M ".webhooks[0].matchers[0][\"match-json-body\"]" samples/json_sample.json | curl -ik http://127.0.0.1:8000/webhook -X POST -d@-
+.PHONY: curl-test
 
 ##
 ##----

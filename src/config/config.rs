@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::path::PathBuf;
 use crate::APPLICATION_NAME;
 
 #[derive(Debug, Default, Deserialize)]
@@ -8,14 +9,14 @@ pub(crate) struct Config {
     pub(crate) webhooks: Vec<Webhook>,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, Clone)]
 pub(crate) struct Webhook {
     pub(crate) name: String,
     #[serde(rename(deserialize = "matchers-strategy"))]
     pub(crate) matchers_strategy: Option<MatchersStrategy>,
     pub(crate) matchers: Vec<Matcher>,
     #[serde(rename(deserialize = "actions-to-execute"))]
-    pub(crate) actions_to_execute: String,
+    pub(crate) actions_to_execute: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
@@ -26,7 +27,7 @@ pub(crate) enum MatchersStrategy {
     One,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub(crate) struct Matcher {
     #[serde(rename(deserialize = "match-json-body"))]
     pub(crate) match_json_body: Option<serde_json::Value>,
@@ -49,22 +50,29 @@ impl Display for MatchersStrategy {
     }
 }
 
-pub(crate) fn get_config(config_file: Option<&str>) -> Result<Config, anyhow::Error> {
+pub(crate) fn get_config_file(config_file: Option<&str>) -> Result<PathBuf, anyhow::Error> {
     let default_file_name = format!(".{}.json", APPLICATION_NAME.to_ascii_lowercase());
     let config_file_name = config_file.unwrap_or(default_file_name.as_str());
-    let config_file_path = std::path::Path::new(config_file_name);
+
+    let config_file_path = PathBuf::from(config_file_name);
 
     if !config_file_path.is_file() {
         return if config_file.is_some() {
-            Err(anyhow::anyhow!("Config file not found: {}", config_file_name))
+            Err(anyhow::anyhow!("Config file not found: {}", config_file_path.to_str().unwrap()))
         } else {
             Err(anyhow::anyhow!("No config file specified, could not find a default one. You can create a \"{}\" file in this directory to configure the application.", default_file_name))
         }
     }
 
-    let config_file_content = std::fs::read_to_string(config_file_path).unwrap();
+    Ok(config_file_path)
+}
 
-    let config: Config = serde_json::from_str(&config_file_content).unwrap();
+pub(crate) fn get_config(config_file: Option<&str>) -> Result<Config, anyhow::Error> {
+    let config_file_path = get_config_file(config_file)?;
+
+    let config_file_content = std::fs::read_to_string(config_file_path)?;
+
+    let config: Config = serde_json::from_str(&config_file_content)?;
 
     Ok(config)
 }
@@ -116,10 +124,10 @@ mod tests {
         let config = get_config(Some(sample_file.to_str().unwrap())).unwrap();
 
         // Webhook
-        assert_eq!(1, config.webhooks.len());
+        assert_eq!(2, config.webhooks.len());
         let webhook = &config.webhooks[0];
         assert_eq!("my_webhook_name", webhook.name);
-        assert_eq!("echo \"success!\"", webhook.actions_to_execute);
+        assert_eq!(vec!["echo", "success!"], webhook.actions_to_execute);
         assert_eq!(true, webhook.matchers_strategy.is_some());
         assert_eq!(MatchersStrategy::One, webhook.matchers_strategy.unwrap());
 

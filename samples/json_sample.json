@@ -19,7 +19,25 @@
                     }
                 }
             ],
-            "actions-to-execute": "echo \"success!\""
+            "actions-to-execute": ["echo", "success!"]
+        },
+        {
+            "name": "my_webhook_name_2",
+            "matchers": [
+                {
+                    "match-json-body": {
+                        "repository": {
+                            "url": "https://github.com/my-org/my-repo"
+                        },
+                        "action": "published"
+                    }
+                }
+            ],
+            "actions-to-execute": [
+                "php",
+                "-r",
+                "fwrite(STDERR, 'msg to stderr');"
+            ]
         }
     ]
 }

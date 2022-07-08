@@ -16,7 +16,7 @@ To list project's commands, run `make` or `make help`.
 * 🟩 HTTP Server
   * 🟩 Create an HTTP entrypoint for the webhook listener 
   * 🟥 Create an HTTP entrypoint for the configuration update
-  * 🟥 Secure the config update entrypoint
+  * 🟥 Secure the config update entrypoint with an authentication system
   * ❓ Allow multiple instances to be started
 * 🟨 Configuration
   * 🟩 JSON config file 
@@ -30,7 +30,7 @@ To list project's commands, run `make` or `make help`.
   * ❓ Allow filtering JSON body with string/regex matching (pretty hard though, since the entire JSON has to be traversed, but could be neat)
 * 🟨 Executor worker
   * 🟩 Create a separate thread only to listen for actions to execute (the "queue" system) 
-  * 🟥 Allow executing processes in the worker thread
+  * 🟩 Allow executing processes in the worker thread
   * ❓ Think about concurrency when a lot of actions have to be executed at the same time
 * 🟥 Analytics
   * 🟥 Make most app structures more exhaustive (names, ids, logs...)

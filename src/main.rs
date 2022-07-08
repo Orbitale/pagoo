@@ -13,7 +13,7 @@ use crate::commands::serve_webhook;
 
 pub(crate) mod actions {
     pub(crate) mod executor;
-    pub(crate) mod get_actions;
+    pub(crate) mod matching_webhooks;
 }
 
 pub(crate) mod api {

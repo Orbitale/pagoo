@@ -4,7 +4,9 @@ use actix_web::HttpServer;
 use std::io::Error;
 use std::io::ErrorKind;
 use tokio::sync::mpsc;
+use crate::actions::executor;
 use crate::config::config;
+use crate::config::config::Webhook;
 
 pub(crate) const DEFAULT_PORT: &str = "8000";
 pub(crate) const DEFAULT_HOST: &str = "127.0.0.1";
@@ -21,6 +23,8 @@ pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: O
     let config = config::get_config(config_file);
 
     if config.is_err() {
+        let config_file_path = config::get_config_file(config_file).unwrap();
+        error!("Error loading config file \"{}\"", config_file_path.to_str().unwrap());
         let err = config.unwrap_err();
         return Err(Error::new(ErrorKind::Other, err));
     }
@@ -43,10 +47,14 @@ pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: O
         .await
 }
 
-fn start_workers(mut receiver: mpsc::Receiver<Vec<String>>) {
+fn start_workers(mut receiver: mpsc::Receiver<Vec<Webhook>>) {
     tokio::spawn(async move {
-        while let Some(msg) = receiver.recv().await {
-            println!("Got message: {:?}", msg);
+        while let Some(webhooks) = receiver.recv().await {
+            let res = executor::execute_webhook_actions(webhooks);
+
+            if res.is_err() {
+                error!("Error executing actions");
+            }
         }
     });
 }

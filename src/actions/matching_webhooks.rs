@@ -1,11 +1,12 @@
 use actix_web::http::header::HeaderMap;
 use crate::config::config::Config;
+use crate::config::config::Webhook;
 use crate::config::config::MatchersStrategy;
 use crate::matchers::headers::match_headers;
 use crate::matchers::json::match_json;
 
-pub(crate) fn from_request_parts(config: &Config, body_as_string: &String, headers: &HeaderMap) -> Result<Vec<String>, anyhow::Error> {
-    let mut actions_to_add: Vec<String> = Vec::new();
+pub(crate) fn from_request_parts(config: &Config, body_as_string: &String, headers: &HeaderMap) -> Result<Vec<Webhook>, anyhow::Error> {
+    let mut matching_webhooks: Vec<Webhook> = Vec::new();
 
     for webhook in &config.webhooks {
         let strategy = webhook.matchers_strategy.clone().unwrap_or_default();
@@ -27,13 +28,9 @@ pub(crate) fn from_request_parts(config: &Config, body_as_string: &String, heade
         };
 
         if matched {
-            let actions_to_execute = &webhook.actions_to_execute;
-
-            info!("Matched webhook: {:?}", webhook.name);
-
-            actions_to_add.push(actions_to_execute.clone());
+            matching_webhooks.push(webhook.clone());
         }
     }
 
-    Ok(actions_to_add)
+    Ok(matching_webhooks)
 }
