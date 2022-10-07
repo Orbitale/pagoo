@@ -5,6 +5,7 @@ extern crate log;
 use clap::ArgMatches;
 use clap::Command as ClapCommand;
 use clap::Arg;
+use clap::ArgAction;
 use std::env;
 use std::process::Command;
 use std::process::Termination;
@@ -51,7 +52,7 @@ fn main() -> ReturnExitCode {
     let app = get_app().subcommands(subcommands);
 
     let arg_matches = app.get_matches();
-    let mut config_file = arg_matches.value_of("config-file");
+    let mut config_file = arg_matches.get_one::<String>("config-file").map(|s|s.as_str());
     if config_file.is_some() && config_file.unwrap() == "" {
         config_file = None;
     }
@@ -151,7 +152,7 @@ fn get_app<'a>() -> ClapCommand<'a> {
             Arg::new("config-file")
                 .short('c')
                 .long("config-file")
-                .multiple_occurrences(false)
+                .action(ArgAction::Append)
                 .multiple_values(false)
                 .takes_value(true)
                 .help("Specify the config file to use for this instance."),
@@ -160,7 +161,7 @@ fn get_app<'a>() -> ClapCommand<'a> {
             Arg::new("verbose")
                 .short('v')
                 .long("verbose")
-                .multiple_occurrences(true)
+                .action(ArgAction::Append)
                 .multiple_values(false)
                 .takes_value(false)
                 .help("Set the verbosity level. -v for debug, -vv for trace, -vvv to trace executed modules"),
@@ -191,5 +192,15 @@ fn default_command() -> Option<ExitCode> {
     match status {
         Some(code) => Some(ExitCode::from(code as u8)),
         None => Some(ExitCode::FAILURE),
+    }
+}
+
+#[cfg(test)]
+mod main_tests {
+    use super::*;
+
+    #[test]
+    fn verify_cli() {
+        get_app().debug_assert();
     }
 }

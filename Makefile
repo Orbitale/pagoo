@@ -13,8 +13,10 @@ else
 endif
 
 ## Necessary for coverage, doesn't impact compile-time too much (yet?).
-export RUSTFLAGS := -Cinstrument-coverage
-export LLVM_PROFILE_FILE := target/coverage/pagoo-%p-%m.profraw
+ifeq ($(COVERAGE), 1)
+	export RUSTFLAGS := -Cinstrument-coverage
+	export LLVM_PROFILE_FILE := target/coverage/pagoo-%p-%m.profraw
+endif
 
 ##
 ##==================

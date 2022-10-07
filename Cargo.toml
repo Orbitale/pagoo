@@ -17,7 +17,7 @@ rusqlite = { version = "0.28", features = ["bundled"] }
 rusqlite_migration = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.19", features = ["sync"] }
+tokio = { version = "1.21", features = ["sync"] }
 
 [dev-dependencies]
 

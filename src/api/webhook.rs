@@ -109,7 +109,7 @@ mod tests {
 
         let res = webhook(req, body_webhook, config, queue_sender).await;
 
-        assert_eq!(res.status(), http::StatusCode::CREATED);
+        assert_eq!(res.status(), http::StatusCode::OK);
 
         let res = receiver.recv().await;
         assert!(res.is_some());
@@ -136,7 +136,7 @@ mod tests {
 
         let res = webhook(req, web::Bytes::new(), config, queue_sender).await;
 
-        assert_eq!(res.status(), http::StatusCode::CREATED);
+        assert_eq!(res.status(), http::StatusCode::OK);
 
         let res = receiver.recv().await;
         assert!(res.is_some());

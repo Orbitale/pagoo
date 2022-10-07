@@ -30,8 +30,8 @@ pub(crate) fn get_command() -> CommandHandler {
 }
 
 fn execute(config_file_value: Option<&str>, args: &ArgMatches) -> Option<ExitCode> {
-    let host: Option<&str> = args.value_of("host");
-    let port: Option<&str> = args.value_of("port");
+    let host: Option<&str> = args.get_one::<String>("host").map(|s|s.as_str());
+    let port: Option<&str> = args.get_one::<String>("port").map(|s|s.as_str());
 
     match crate::serve::serve(config_file_value, host, port) {
         Ok(_) => Some(ExitCode::SUCCESS),
