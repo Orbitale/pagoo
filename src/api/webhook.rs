@@ -1,10 +1,10 @@
+use crate::actions::matching_webhooks;
+use crate::config::Config;
+use crate::config::Webhook;
 use actix_web::web;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use tokio::sync::mpsc;
-use crate::config::Config;
-use crate::config::Webhook;
-use crate::actions::matching_webhooks;
 
 pub(crate) async fn webhook(
     request: HttpRequest,
@@ -24,7 +24,8 @@ pub(crate) async fn webhook(
 
     let matching_webhooks = matching_webhooks::from_request_parts(config, &body_as_string, headers);
     if matching_webhooks.is_err() {
-        return HttpResponse::BadRequest().body("Could not get actions to execute from this request.");
+        return HttpResponse::BadRequest()
+            .body("Could not get actions to execute from this request.");
     }
     let matching_webhooks = matching_webhooks.unwrap();
 
@@ -42,7 +43,10 @@ pub(crate) async fn webhook(
         let sender_response = queue_sender.send(matching_webhooks).await;
 
         if sender_response.is_err() {
-            error!("Could not send message to queue: {:?}", sender_response.unwrap_err());
+            error!(
+                "Could not send message to queue: {:?}",
+                sender_response.unwrap_err()
+            );
             return HttpResponse::InternalServerError().body("Could not send message to queue.");
         }
 
@@ -50,26 +54,29 @@ pub(crate) async fn webhook(
 
         return HttpResponse::Ok()
             .append_header(("Content-Type", "application/json"))
-            .body(response_body.to_string())
-        ;
+            .body(response_body.to_string());
     }
 
-    HttpResponse::BadRequest().body(format!("Request matched no webhook.\nBody:\n{}\n", body_as_string))
+    HttpResponse::BadRequest().body(format!(
+        "Request matched no webhook.\nBody:\n{}\n",
+        body_as_string
+    ))
 }
 
 #[cfg(test)]
 mod tests {
-    use actix_web::dev::ServiceResponse;
-    use actix_web::http;
-    use actix_web::test::TestRequest;
-    use actix_web::test::read_body;
-    use actix_web::web;
     use super::*;
     use crate::test_utils;
+    use actix_web::dev::ServiceResponse;
+    use actix_web::http;
+    use actix_web::test::read_body;
+    use actix_web::test::TestRequest;
+    use actix_web::web;
 
     #[actix_web::test]
     async fn test_no_matcher() {
-        let body_str = r#"{"repository":{"url":"https://github.com/my-org/my-repo"},"action":"published"}"#;
+        let body_str =
+            r#"{"repository":{"url":"https://github.com/my-org/my-repo"},"action":"published"}"#;
         let body_webhook = web::Bytes::from_static(body_str.as_bytes());
 
         let req = TestRequest::default()
@@ -88,12 +95,17 @@ mod tests {
 
         let response_body = read_body(ServiceResponse::new(req, res)).await;
 
-        assert_eq!(response_body, format!("Request matched no webhook.\nBody:\n{}\n", body_str));
+        assert_eq!(
+            response_body,
+            format!("Request matched no webhook.\nBody:\n{}\n", body_str)
+        );
     }
 
     #[actix_web::test]
     async fn test_webhook_with_json() {
-        let body_str = r#"{"repository":{"url":"https://github.com/my-org/my-repo"},"action":"published"}"#.as_bytes();
+        let body_str =
+            r#"{"repository":{"url":"https://github.com/my-org/my-repo"},"action":"published"}"#
+                .as_bytes();
         let body_webhook = web::Bytes::from_static(body_str.clone());
 
         let req = TestRequest::default()

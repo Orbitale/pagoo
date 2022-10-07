@@ -1,11 +1,11 @@
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
-use std::io::Write;
+use crate::APPLICATION_NAME;
 use log::Level;
 use pretty_env_logger::env_logger::fmt::Color;
 use pretty_env_logger::env_logger::fmt::Style;
 use pretty_env_logger::env_logger::fmt::StyledValue;
-use crate::APPLICATION_NAME;
+use std::io::Write;
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 
 pub fn set_verbosity_value(value: u8, is_quiet: bool) {
     let env_var_name = format!("{}_LOG", APPLICATION_NAME.to_ascii_uppercase());

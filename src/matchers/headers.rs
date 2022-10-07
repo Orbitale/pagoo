@@ -1,5 +1,5 @@
-use actix_web::http::header::HeaderMap;
 use crate::config::Matcher;
+use actix_web::http::header::HeaderMap;
 
 pub(crate) fn match_headers(headers: &HeaderMap, matcher: &Matcher) -> Result<bool, anyhow::Error> {
     if matcher.match_headers.is_none() {
@@ -12,7 +12,13 @@ pub(crate) fn match_headers(headers: &HeaderMap, matcher: &Matcher) -> Result<bo
 
     for (header_name, header_value) in matcher_headers {
         if headers.contains_key(header_name) {
-            let header_value_as_string = headers.get(header_name).ok_or(anyhow::anyhow!("Could not get header by name \"{}\".", header_name))?.to_str()?;
+            let header_value_as_string = headers
+                .get(header_name)
+                .ok_or(anyhow::anyhow!(
+                    "Could not get header by name \"{}\".",
+                    header_name
+                ))?
+                .to_str()?;
             if header_value_as_string == header_value {
                 headers_matching += 1
             }
@@ -25,15 +31,21 @@ pub(crate) fn match_headers(headers: &HeaderMap, matcher: &Matcher) -> Result<bo
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
     use actix_web::http::header::HeaderName;
     use actix_web::http::header::HeaderValue;
+    use std::collections::HashMap;
 
     #[test]
     fn test_match_headers_with_different_case() {
         let mut headers = HeaderMap::new();
-        headers.insert(HeaderName::from_static("x-header-1"), HeaderValue::from_static("value1"));
-        headers.insert(HeaderName::from_static("x-header-2"), HeaderValue::from_static("value2"));
+        headers.insert(
+            HeaderName::from_static("x-header-1"),
+            HeaderValue::from_static("value1"),
+        );
+        headers.insert(
+            HeaderName::from_static("x-header-2"),
+            HeaderValue::from_static("value2"),
+        );
 
         let matcher = Matcher {
             match_headers: Some(HashMap::from([
@@ -49,8 +61,14 @@ mod tests {
     #[test]
     fn test_not_match_headers() {
         let mut headers = HeaderMap::new();
-        headers.insert(HeaderName::from_static("x-header-1"), HeaderValue::from_static("value1"));
-        headers.insert(HeaderName::from_static("x-header-2"), HeaderValue::from_static("value2"));
+        headers.insert(
+            HeaderName::from_static("x-header-1"),
+            HeaderValue::from_static("value1"),
+        );
+        headers.insert(
+            HeaderName::from_static("x-header-2"),
+            HeaderValue::from_static("value2"),
+        );
 
         let matcher = Matcher {
             match_headers: Some(HashMap::from([

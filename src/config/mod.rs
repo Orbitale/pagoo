@@ -1,8 +1,8 @@
+use crate::APPLICATION_NAME;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::PathBuf;
-use crate::APPLICATION_NAME;
 
 #[derive(Debug, Default, Deserialize)]
 pub(crate) struct Config {
@@ -68,10 +68,13 @@ pub(crate) fn get_config_file(config_file: Option<&str>) -> Result<PathBuf, anyh
 
     if !config_file_path.is_file() {
         return if config_file.is_some() {
-            Err(anyhow::anyhow!("Config file not found: {}", config_file_path.to_str().unwrap()))
+            Err(anyhow::anyhow!(
+                "Config file not found: {}",
+                config_file_path.to_str().unwrap()
+            ))
         } else {
             Err(anyhow::anyhow!("No config file specified, could not find a default one. You can create a \"{}\" file in this directory to configure the application.", default_file_name))
-        }
+        };
     }
 
     Ok(config_file_path)
@@ -107,7 +110,9 @@ mod tests {
     use std::path::PathBuf;
 
     fn get_sample_file_path() -> PathBuf {
-        std::env::current_dir().unwrap().join("samples/json_sample.json")
+        std::env::current_dir()
+            .unwrap()
+            .join("samples/json_sample.json")
     }
 
     #[test]
@@ -136,7 +141,10 @@ mod tests {
     fn test_inexistent_file_with_argument() {
         let config = get_config(Some("some_inexistent_file.json"));
         assert!(config.is_err());
-        assert_eq!(config.unwrap_err().to_string(), "Config file not found: some_inexistent_file.json".to_string());
+        assert_eq!(
+            config.unwrap_err().to_string(),
+            "Config file not found: some_inexistent_file.json".to_string()
+        );
     }
 
     #[test]
@@ -183,5 +191,4 @@ mod tests {
         assert_eq!(true, headers_map.contains_key("x-github-delivery"));
         assert_eq!("12345", headers_map.get("x-github-delivery").unwrap());
     }
-
 }

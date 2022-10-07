@@ -2,15 +2,15 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
-use clap::ArgMatches;
-use clap::Command as ClapCommand;
+use crate::commands::serve_webhook;
 use clap::Arg;
 use clap::ArgAction;
+use clap::ArgMatches;
+use clap::Command as ClapCommand;
 use std::env;
 use std::process::Command;
-use std::process::Termination;
 use std::process::ExitCode;
-use crate::commands::serve_webhook;
+use std::process::Termination;
 
 mod actions {
     pub(crate) mod executor;
@@ -52,7 +52,9 @@ fn main() -> ReturnExitCode {
     let app = get_app().subcommands(subcommands);
 
     let arg_matches = app.get_matches();
-    let mut config_file = arg_matches.get_one::<String>("config-file").map(|s|s.as_str());
+    let mut config_file = arg_matches
+        .get_one::<String>("config-file")
+        .map(|s| s.as_str());
     if config_file.is_some() && config_file.unwrap() == "" {
         config_file = None;
     }
@@ -87,9 +89,7 @@ struct ReturnExitCode {
 
 impl ReturnExitCode {
     fn new(exit_code: Option<ExitCode>) -> Self {
-        Self {
-            exit_code,
-        }
+        Self { exit_code }
     }
 }
 
@@ -114,10 +114,12 @@ struct CommandList {
 
 impl CommandList {
     fn subcommands(&self) -> Vec<ClapCommand> {
-        self.commands.iter().fold(Vec::new(), |mut commands, command| {
-            commands.push(command.command_definition.clone());
-            commands
-        })
+        self.commands
+            .iter()
+            .fold(Vec::new(), |mut commands, command| {
+                commands.push(command.command_definition.clone());
+                commands
+            })
     }
 }
 
@@ -129,17 +131,18 @@ pub(crate) struct CommandHandler {
 impl CommandHandler {
     pub fn new(
         command_definition: ClapCommand,
-        executor: Box<dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>>
+        executor: Box<dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>>,
     ) -> Self {
-        Self { command_definition, executor }
+        Self {
+            command_definition,
+            executor,
+        }
     }
 }
 
 fn application_commands() -> CommandList {
     CommandList {
-        commands: vec![
-            Box::new(serve_webhook::get_command())
-        ],
+        commands: vec![Box::new(serve_webhook::get_command())],
     }
 }
 
@@ -182,7 +185,8 @@ fn default_command() -> Option<ExitCode> {
     // re-run the program with "--help"
     let mut subprocess = Command::new(&current_process_name)
         .arg("--help")
-        .spawn().ok()?;
+        .spawn()
+        .ok()?;
 
     let child = subprocess.wait().ok()?;
 

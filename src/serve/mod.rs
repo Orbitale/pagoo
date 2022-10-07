@@ -1,3 +1,7 @@
+use crate::actions::executor;
+use crate::config;
+use crate::config::Webhook;
+use crate::db::get_database_connection;
 use actix_web::web;
 use actix_web::App;
 use actix_web::HttpServer;
@@ -6,17 +10,17 @@ use std::io::Error;
 use std::io::ErrorKind;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
-use crate::actions::executor;
-use crate::config;
-use crate::config::Webhook;
-use crate::db::get_database_connection;
 
 pub(crate) const DEFAULT_PORT: &str = "8000";
 pub(crate) const DEFAULT_HOST: &str = "127.0.0.1";
 pub(crate) const API_PATH: &str = "/webhook";
 
 #[actix_web::main]
-pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: Option<&str>) -> std::io::Result<()> {
+pub(crate) async fn serve(
+    config_file: Option<&str>,
+    host: Option<&str>,
+    port: Option<&str>,
+) -> std::io::Result<()> {
     let host = host.unwrap_or(DEFAULT_HOST);
     let port = port.unwrap_or(DEFAULT_PORT);
 
@@ -30,7 +34,10 @@ pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: O
             error!("{}", config_file_path.unwrap_err().to_string());
             std::process::exit(1);
         }
-        error!("Error loading config file \"{}\"", config_file_path.unwrap().to_str().unwrap());
+        error!(
+            "Error loading config file \"{}\"",
+            config_file_path.unwrap().to_str().unwrap()
+        );
         let err = config.unwrap_err();
         return Err(Error::new(ErrorKind::Other, err));
     }
@@ -57,9 +64,9 @@ pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: O
             .app_data(transmitter_data.clone())
             .service(web::resource(API_PATH).to(crate::api::webhook::webhook))
     })
-        .bind((host, port_as_int))?
-        .run()
-        .await
+    .bind((host, port_as_int))?
+    .run()
+    .await
 }
 
 fn start_workers(mut receiver: mpsc::Receiver<Vec<Webhook>>, conn: Connection) {

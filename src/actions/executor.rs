@@ -1,12 +1,17 @@
-use rusqlite::Connection;
+use crate::config::Webhook;
 use rusqlite::named_params;
+use rusqlite::Connection;
 use std::process::Command;
 use std::sync::Arc;
 use std::sync::Mutex;
-use crate::config::Webhook;
 
-pub(crate) fn execute_webhook_actions(webhooks: Vec<Webhook>, conn: Arc<Mutex<Connection>>) -> anyhow::Result<()> {
-    let conn = conn.lock().expect("Could not retrieve database connection.");
+pub(crate) fn execute_webhook_actions(
+    webhooks: Vec<Webhook>,
+    conn: Arc<Mutex<Connection>>,
+) -> anyhow::Result<()> {
+    let conn = conn
+        .lock()
+        .expect("Could not retrieve database connection.");
 
     for webhook in webhooks {
         let mut actions = webhook.actions_to_execute.clone();
@@ -21,7 +26,8 @@ pub(crate) fn execute_webhook_actions(webhooks: Vec<Webhook>, conn: Arc<Mutex<Co
         let stdout_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
         let stderr_str = String::from_utf8_lossy(&output.stderr).trim().to_string();
 
-        conn.execute("
+        conn.execute(
+            "
             INSERT INTO logs_webhooks (
                 execution_date,
                 webhook_name,
@@ -44,7 +50,7 @@ pub(crate) fn execute_webhook_actions(webhooks: Vec<Webhook>, conn: Arc<Mutex<Co
                 ":command_exit_code": status,
                 ":command_stdout": stdout_str,
                 ":command_stderr": stderr_str,
-            }
+            },
         )?;
     }
 

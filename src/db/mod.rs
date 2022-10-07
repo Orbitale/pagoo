@@ -1,11 +1,13 @@
-use std::path::PathBuf;
 use anyhow::Context;
 use rusqlite::Connection;
 use rusqlite::OpenFlags;
 use rusqlite_migration::Migrations;
 use rusqlite_migration::M;
+use std::path::PathBuf;
 
-pub(crate) fn get_database_connection(configured_path: Option<String>) -> anyhow::Result<Connection> {
+pub(crate) fn get_database_connection(
+    configured_path: Option<String>,
+) -> anyhow::Result<Connection> {
     let database_path = get_database_path(configured_path);
     let database_flags = get_database_flags();
 
@@ -22,7 +24,10 @@ fn get_database_path(configured_path: Option<String>) -> PathBuf {
         file
     } else {
         let home_dir = crate::config::pagoo_home_dir();
-        let home_dir = home_dir.to_str().context("Could not get HOME dir.").unwrap();
+        let home_dir = home_dir
+            .to_str()
+            .context("Could not get HOME dir.")
+            .unwrap();
         format!("{}/data.db3", home_dir)
     };
 
@@ -42,7 +47,5 @@ fn get_database_flags() -> OpenFlags {
 }
 
 fn get_migrations() -> Migrations<'static> {
-    Migrations::new(vec![
-        M::up(include_str!("./migrations/00-schema.sql")),
-    ])
+    Migrations::new(vec![M::up(include_str!("./migrations/00-schema.sql"))])
 }
