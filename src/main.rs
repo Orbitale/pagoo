@@ -57,10 +57,10 @@ fn main() -> ReturnExitCode {
         config_file = None;
     }
 
-    let verbose_value = arg_matches.indices_of("verbose").unwrap_or_default();
-    let is_quiet = arg_matches.index_of("quiet").unwrap_or_default() > 0;
+    let verbosity_level: &u8 = arg_matches.get_one::<u8>("verbose").unwrap_or(&0);
+    let is_quiet = arg_matches.get_flag("quiet");
 
-    logging::set_verbosity_value(verbose_value.len(), is_quiet);
+    logging::set_verbosity_value(*verbosity_level, is_quiet);
 
     let subcommand_name = arg_matches.subcommand_name();
     let args = if subcommand_name.is_some() {
@@ -113,7 +113,7 @@ struct CommandList {
 }
 
 impl CommandList {
-    fn subcommands(&self) -> Vec<ClapCommand<'static>> {
+    fn subcommands(&self) -> Vec<ClapCommand> {
         self.commands.iter().fold(Vec::new(), |mut commands, command| {
             commands.push(command.command_definition.clone());
             commands
@@ -122,13 +122,13 @@ impl CommandList {
 }
 
 pub(crate) struct CommandHandler {
-    pub(crate) command_definition: ClapCommand<'static>,
+    pub(crate) command_definition: ClapCommand,
     pub(crate) executor: Box<dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>>,
 }
 
 impl CommandHandler {
     pub fn new(
-        command_definition: ClapCommand<'static>,
+        command_definition: ClapCommand,
         executor: Box<dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>>
     ) -> Self {
         Self { command_definition, executor }
@@ -143,7 +143,7 @@ fn application_commands() -> CommandList {
     }
 }
 
-fn get_app<'a>() -> ClapCommand<'a> {
+fn get_app() -> ClapCommand {
     ClapCommand::new(APPLICATION_NAME)
         .version(APP_VERSION_METADATA.trim())
         .author("Alex \"Pierstoval\" Rock <alex@orbitale.io>")
@@ -152,25 +152,24 @@ fn get_app<'a>() -> ClapCommand<'a> {
             Arg::new("config-file")
                 .short('c')
                 .long("config-file")
-                .action(ArgAction::Append)
-                .multiple_values(false)
-                .takes_value(true)
+                .global(true)
+                .num_args(1)
                 .help("Specify the config file to use for this instance."),
         )
         .arg(
             Arg::new("verbose")
                 .short('v')
                 .long("verbose")
-                .action(ArgAction::Append)
-                .multiple_values(false)
-                .takes_value(false)
+                .global(true)
+                .action(ArgAction::Count)
                 .help("Set the verbosity level. -v for debug, -vv for trace, -vvv to trace executed modules"),
         )
         .arg(
             Arg::new("quiet")
                 .short('q')
                 .long("quiet")
-                .takes_value(false)
+                .global(true)
+                .num_args(0)
                 .help("Do not display any output. Has precedence over -v|--verbose"),
         )
 }

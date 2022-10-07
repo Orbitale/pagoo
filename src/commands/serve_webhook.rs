@@ -1,7 +1,7 @@
 use std::process::ExitCode;
 use clap::ArgMatches;
 use clap::Command as ClapCommand;
-use clap::Arg;
+use clap::arg;
 use crate::CommandHandler;
 use crate::serve::DEFAULT_PORT;
 use crate::serve::DEFAULT_HOST;
@@ -10,20 +10,8 @@ pub(crate) fn get_command() -> CommandHandler {
     CommandHandler::new(
         ClapCommand::new("serve:webhook")
             .about("Starts the Webhook HTTP server")
-            .arg(
-                Arg::new("port")
-                    .long("port")
-                    .help("The TCP port to listen to")
-                    .default_value(DEFAULT_PORT.as_ref())
-                    .takes_value(true),
-            )
-            .arg(
-                Arg::new("host")
-                    .long("host")
-                    .help("The network host to listen to")
-                    .default_value(DEFAULT_HOST.as_ref())
-                    .takes_value(true),
-            )
+            .arg(arg!(--port <PORT> "The TCP port to listen to").default_value(DEFAULT_PORT))
+            .arg(arg!(--host <HOST> "The network host to listen to").default_value(DEFAULT_HOST))
         ,
         Box::new(execute)
     )

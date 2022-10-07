@@ -22,13 +22,15 @@ pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: O
 
     let port_as_int = port.parse::<u16>().expect("Invalid port value.");
 
-    info!("Starting HTTP server on {}:{}", host, port);
-
     let config = config::get_config(config_file);
 
     if config.is_err() {
-        let config_file_path = config::get_config_file(config_file).unwrap();
-        error!("Error loading config file \"{}\"", config_file_path.to_str().unwrap());
+        let config_file_path = config::get_config_file(config_file);
+        if config_file_path.is_err() {
+            error!("{}", config_file_path.unwrap_err().to_string());
+            std::process::exit(1);
+        }
+        error!("Error loading config file \"{}\"", config_file_path.unwrap().to_str().unwrap());
         let err = config.unwrap_err();
         return Err(Error::new(ErrorKind::Other, err));
     }
@@ -40,10 +42,14 @@ pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: O
 
     let (sender, receiver) = mpsc::channel(8);
 
+    info!("Starting queue workers...");
+
     start_workers(receiver, database_connection);
 
     let config = web::Data::new(config);
     let transmitter_data = web::Data::new(sender);
+
+    info!("Starting HTTP server on {}:{}", host, port);
 
     HttpServer::new(move || {
         App::new()
