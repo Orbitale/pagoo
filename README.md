@@ -17,12 +17,12 @@ To list project's commands, run `make` or `make help`.
 
 * 🟩 HTTP Server
   * 🟩 Create an HTTP entrypoint for the webhook listener 
-  * 🟥 Create an HTTP entrypoint for the configuration update
   * 🟥 Secure the config update entrypoint with an authentication system
+  * ❓ Create an HTTP entrypoint for the configuration update
   * ❓ Allow multiple instances to be started
 * 🟨 Configuration
   * 🟩 JSON config file 
-  * 🟥 Allow runtime updates of the configuration
+  * ❓ Allow runtime updates of the configuration
   * ❓ Think about other storages than a single file
 * 🟨 Webhook matching
   * 🟩 Strategy based on list of matchers 
@@ -35,8 +35,9 @@ To list project's commands, run `make` or `make help`.
   * 🟩 Allow executing processes in the worker thread
   * ❓ Think about concurrency when a lot of actions have to be executed at the same time
 * 🟥 Analytics
-  * 🟥 Make most app structures more exhaustive (names, ids, logs...)
-  * 🟥 Store the logs (sqlite database, json-based log file❓)
+  * 🟩 Store the logs (sqlite database, json-based log file❓)
+  * 🟥 Create an HTTP entrypoint to get the logs
+  * 🟥 Secure the HTTP entrypoint that delivers logs
 * 🟥 App frontend
   * 🟥 Create a separate command to spawn a frontend app
   * 🟥 Create a dashboard to visualize logs
