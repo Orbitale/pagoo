@@ -48,7 +48,7 @@ pub(crate) async fn webhook(
 
         let _ = sender_response.unwrap();
 
-        return HttpResponse::Created()
+        return HttpResponse::Ok()
             .append_header(("Content-Type", "application/json"))
             .body(response_body.to_string())
         ;
