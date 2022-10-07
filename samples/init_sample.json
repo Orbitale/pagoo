@@ -1,0 +1,21 @@
+{
+    "webhooks": [
+        {
+            "name": "webhook_1",
+            "matchers-strategy": "one",
+            "matchers": [
+                {
+                    "match-json-body": {
+                        "some-json-key": "some-json-value"
+                    }
+                },
+                {
+                    "match-headers": {
+                        "x-some-http-header": "some-header-value",
+                    }
+                }
+            ],
+            "actions-to-execute": ["echo", "success!"]
+        }
+    ]
+}

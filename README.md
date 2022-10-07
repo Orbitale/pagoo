@@ -32,6 +32,7 @@ TODO
   * ❓ Create an HTTP entrypoint for the configuration update
   * ❓ Allow multiple instances to be started
 * 🟨 Configuration
+  * 🟩 Create an `init` command to create a boilerplate of configuration file. 
   * 🟩 JSON config file 
   * ❓ Allow runtime updates of the configuration
   * ❓ Think about other storages than a single file

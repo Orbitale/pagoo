@@ -62,7 +62,7 @@ pub(crate) async fn serve(
         App::new()
             .app_data(config.clone())
             .app_data(transmitter_data.clone())
-            .service(web::resource(API_PATH).to(crate::api::webhook::webhook))
+            .service(web::resource(API_PATH).to(crate::http::webhook::webhook))
     })
     .bind((host, port_as_int))?
     .run()
