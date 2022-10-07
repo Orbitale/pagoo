@@ -1,15 +1,19 @@
 use actix_web::web;
 use actix_web::App;
 use actix_web::HttpServer;
+use rusqlite::Connection;
 use std::io::Error;
 use std::io::ErrorKind;
+use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 use crate::actions::executor;
-use crate::config::config;
-use crate::config::config::Webhook;
+use crate::config;
+use crate::config::Webhook;
+use crate::db::get_database_connection;
 
 pub(crate) const DEFAULT_PORT: &str = "8000";
 pub(crate) const DEFAULT_HOST: &str = "127.0.0.1";
+pub(crate) const API_PATH: &str = "/webhook";
 
 #[actix_web::main]
 pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: Option<&str>) -> std::io::Result<()> {
@@ -29,28 +33,35 @@ pub(crate) async fn serve(config_file: Option<&str>, host: Option<&str>, port: O
         return Err(Error::new(ErrorKind::Other, err));
     }
 
+    let config = config.unwrap();
+    let database_file = config.database_file.clone();
+
+    let database_connection = get_database_connection(database_file).unwrap();
+
     let (sender, receiver) = mpsc::channel(8);
 
-    start_workers(receiver);
+    start_workers(receiver, database_connection);
 
-    let config = web::Data::new(config.unwrap());
+    let config = web::Data::new(config);
     let transmitter_data = web::Data::new(sender);
 
     HttpServer::new(move || {
         App::new()
             .app_data(config.clone())
             .app_data(transmitter_data.clone())
-            .service(web::resource("/webhook").to(crate::api::webhook::webhook))
+            .service(web::resource(API_PATH).to(crate::api::webhook::webhook))
     })
         .bind((host, port_as_int))?
         .run()
         .await
 }
 
-fn start_workers(mut receiver: mpsc::Receiver<Vec<Webhook>>) {
+fn start_workers(mut receiver: mpsc::Receiver<Vec<Webhook>>, conn: Connection) {
     tokio::spawn(async move {
+        let conn = Arc::new(Mutex::new(conn));
+
         while let Some(webhooks) = receiver.recv().await {
-            let res = executor::execute_webhook_actions(webhooks);
+            let res = executor::execute_webhook_actions(webhooks, Arc::clone(&conn));
 
             if res.is_err() {
                 error!("Error executing actions");

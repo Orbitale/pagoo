@@ -20,28 +20,25 @@ pub(crate) mod api {
     pub(crate) mod webhook;
 }
 
-pub(crate) mod config {
-    pub(crate) mod config;
-}
+pub(crate) mod config;
 
 pub(crate) mod commands {
     pub(crate) mod serve_webhook;
 }
+
+mod db;
+
+mod logging;
 
 pub(crate) mod matchers {
     pub(crate) mod headers;
     pub(crate) mod json;
 }
 
-
-pub(crate) mod webhook {
-    pub(crate) mod serve;
-}
+mod serve;
 
 #[cfg(test)]
 pub(crate) mod test_utils;
-
-mod logging;
 
 const APPLICATION_NAME: &str = "pagoo";
 

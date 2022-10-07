@@ -1,4 +1,4 @@
-use crate::config::config::Matcher;
+use crate::config::Matcher;
 
 pub(crate) fn match_json(body_as_string: &String, matcher: &Matcher) -> Result<bool, anyhow::Error> {
     if matcher.match_json_body.is_none() {

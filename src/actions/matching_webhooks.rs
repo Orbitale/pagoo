@@ -1,7 +1,7 @@
 use actix_web::http::header::HeaderMap;
-use crate::config::config::Config;
-use crate::config::config::Webhook;
-use crate::config::config::MatchersStrategy;
+use crate::config::Config;
+use crate::config::Webhook;
+use crate::config::MatchersStrategy;
 use crate::matchers::headers::match_headers;
 use crate::matchers::json::match_json;
 

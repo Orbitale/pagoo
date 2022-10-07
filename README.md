@@ -5,6 +5,8 @@
 
 To list project's commands, run `make` or `make help`.
 
+> Note: If you do not use Make, the build will be different than when using it, because the `Makefile` sets environment vars to send to `rustc` to ease code coverage for testing. You can still use Cargo when you want to build for release.
+
 # Roadmap:
 
 > Legend:

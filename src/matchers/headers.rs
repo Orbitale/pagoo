@@ -1,5 +1,5 @@
 use actix_web::http::header::HeaderMap;
-use crate::config::config::Matcher;
+use crate::config::Matcher;
 
 pub(crate) fn match_headers(headers: &HeaderMap, matcher: &Matcher) -> Result<bool, anyhow::Error> {
     if matcher.match_headers.is_none() {

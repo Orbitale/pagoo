@@ -6,6 +6,9 @@ use crate::APPLICATION_NAME;
 
 #[derive(Debug, Default, Deserialize)]
 pub(crate) struct Config {
+    #[serde(skip_deserializing)]
+    config_file: String,
+    pub(crate) database_file: Option<String>,
     pub(crate) webhooks: Vec<Webhook>,
 }
 
@@ -33,6 +36,13 @@ pub(crate) struct Matcher {
     pub(crate) match_json_body: Option<serde_json::Value>,
     #[serde(rename(deserialize = "match-headers"))]
     pub(crate) match_headers: Option<HashMap<String, String>>,
+}
+
+impl Config {
+    #[allow(unused)] // TODO: check if still useful
+    fn config_file(self) -> String {
+        self.config_file
+    }
 }
 
 impl Default for MatchersStrategy {
@@ -70,11 +80,25 @@ pub(crate) fn get_config_file(config_file: Option<&str>) -> Result<PathBuf, anyh
 pub(crate) fn get_config(config_file: Option<&str>) -> Result<Config, anyhow::Error> {
     let config_file_path = get_config_file(config_file)?;
 
-    let config_file_content = std::fs::read_to_string(config_file_path)?;
+    let config_file_content = std::fs::read_to_string(&config_file_path)?;
 
-    let config: Config = serde_json::from_str(&config_file_content)?;
+    let mut config: Config = serde_json::from_str(&config_file_content)?;
+
+    config.config_file = config_file_path.to_str().unwrap().to_string();
 
     Ok(config)
+}
+
+pub(crate) fn pagoo_home_dir() -> PathBuf {
+    let pagoo_home_dir = dirs::home_dir()
+        .expect("Could not determine HOME_DIR to store database.")
+        .join(".pagoo");
+
+    if !pagoo_home_dir.exists() {
+        std::fs::create_dir_all(&pagoo_home_dir).expect("Could not create Pagoo directory.");
+    }
+
+    pagoo_home_dir
 }
 
 #[cfg(test)]

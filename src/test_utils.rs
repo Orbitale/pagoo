@@ -1,5 +1,5 @@
-use crate::config::config::Config;
-use crate::config::config;
+use crate::config::Config;
+use crate::config;
 
 #[cfg(test)]
 pub(crate) fn get_sample_config() -> anyhow::Result<Config> {

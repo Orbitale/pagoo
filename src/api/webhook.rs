@@ -2,8 +2,8 @@ use actix_web::web;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use tokio::sync::mpsc;
-use crate::config::config::Config;
-use crate::config::config::Webhook;
+use crate::config::Config;
+use crate::config::Webhook;
 use crate::actions::matching_webhooks;
 
 pub(crate) async fn webhook(
