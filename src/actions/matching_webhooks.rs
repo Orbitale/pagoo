@@ -7,13 +7,13 @@ use actix_web::http::header::HeaderMap;
 
 pub(crate) fn from_request_parts(
     config: &Config,
-    body_as_string: &String,
+    body_as_string: &str,
     headers: &HeaderMap,
 ) -> Result<Vec<Webhook>, anyhow::Error> {
     let mut matching_webhooks: Vec<Webhook> = Vec::new();
 
     for webhook in &config.webhooks {
-        let strategy = webhook.matchers_strategy.clone().unwrap_or_default();
+        let strategy = webhook.matchers_strategy.unwrap_or_default();
         let number_of_matchers = webhook.matchers.len();
         let mut number_matching = 0;
 

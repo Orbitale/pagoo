@@ -14,10 +14,9 @@ pub(crate) fn match_headers(headers: &HeaderMap, matcher: &Matcher) -> Result<bo
         if headers.contains_key(header_name) {
             let header_value_as_string = headers
                 .get(header_name)
-                .ok_or(anyhow::anyhow!(
-                    "Could not get header by name \"{}\".",
-                    header_name
-                ))?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Could not get header by name \"{}\".", header_name)
+                })?
                 .to_str()?;
             if header_value_as_string == header_value {
                 headers_matching += 1
@@ -25,7 +24,7 @@ pub(crate) fn match_headers(headers: &HeaderMap, matcher: &Matcher) -> Result<bo
         }
     }
 
-    return Ok(headers_matching == number_of_headers);
+    Ok(headers_matching == number_of_headers)
 }
 
 #[cfg(test)]

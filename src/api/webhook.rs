@@ -29,11 +29,11 @@ pub(crate) async fn webhook(
     }
     let matching_webhooks = matching_webhooks.unwrap();
 
-    if matching_webhooks.len() > 0 {
+    if !matching_webhooks.is_empty() {
         let mut matching_webhooks_names = Vec::new();
 
         for webhook in &matching_webhooks {
-            matching_webhooks_names.push(format!("{}", webhook.name));
+            matching_webhooks_names.push(webhook.name.clone());
         }
 
         let response_body = serde_json::json!({
@@ -50,7 +50,7 @@ pub(crate) async fn webhook(
             return HttpResponse::InternalServerError().body("Could not send message to queue.");
         }
 
-        let _ = sender_response.unwrap();
+        sender_response.unwrap();
 
         return HttpResponse::Ok()
             .append_header(("Content-Type", "application/json"))

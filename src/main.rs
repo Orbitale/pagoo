@@ -42,7 +42,7 @@ mod serve;
 mod test_utils;
 
 const APPLICATION_NAME: &str = "pagoo";
-const APP_VERSION_METADATA: &'static str = include_str!("../.version");
+const APP_VERSION_METADATA: &str = include_str!("../.version");
 
 fn main() -> ReturnExitCode {
     let application_commands = application_commands();
@@ -65,14 +65,13 @@ fn main() -> ReturnExitCode {
     logging::set_verbosity_value(*verbosity_level, is_quiet);
 
     let subcommand_name = arg_matches.subcommand_name();
-    let args = if subcommand_name.is_some() {
-        arg_matches.subcommand_matches(&subcommand_name.unwrap())
+    let args = if let Some(subcommand_name) = subcommand_name {
+        arg_matches.subcommand_matches(subcommand_name)
     } else {
         None
     };
 
-    if subcommand_name.is_some() {
-        let subcommand_name = subcommand_name.unwrap();
+    if let Some(subcommand_name) = subcommand_name {
         for command in application_commands.commands.iter() {
             if command.command_definition.get_name() == subcommand_name {
                 return (command.executor)(config_file, args.unwrap()).into();
@@ -109,7 +108,7 @@ impl Termination for ReturnExitCode {
 }
 
 struct CommandList {
-    commands: Vec<Box<CommandHandler>>,
+    commands: Vec<CommandHandler>,
 }
 
 impl CommandList {
@@ -123,16 +122,15 @@ impl CommandList {
     }
 }
 
+type CommandExecutor = dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>;
+
 pub(crate) struct CommandHandler {
     pub(crate) command_definition: ClapCommand,
-    pub(crate) executor: Box<dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>>,
+    pub(crate) executor: Box<CommandExecutor>,
 }
 
 impl CommandHandler {
-    pub fn new(
-        command_definition: ClapCommand,
-        executor: Box<dyn Fn(Option<&str>, &ArgMatches) -> Option<ExitCode>>,
-    ) -> Self {
+    pub fn new(command_definition: ClapCommand, executor: Box<CommandExecutor>) -> Self {
         Self {
             command_definition,
             executor,
@@ -142,7 +140,7 @@ impl CommandHandler {
 
 fn application_commands() -> CommandList {
     CommandList {
-        commands: vec![Box::new(serve_webhook::get_command())],
+        commands: vec![serve_webhook::get_command()],
     }
 }
 

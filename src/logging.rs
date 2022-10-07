@@ -9,7 +9,7 @@ use std::sync::atomic::Ordering;
 
 pub fn set_verbosity_value(value: u8, is_quiet: bool) {
     let env_var_name = format!("{}_LOG", APPLICATION_NAME.to_ascii_uppercase());
-    let level = std::env::var(env_var_name).unwrap_or(String::from("INFO"));
+    let level = std::env::var(env_var_name).unwrap_or_else(|_| String::from("INFO"));
     let mut level = level.as_str();
 
     let mut builder = pretty_env_logger::formatted_timed_builder();

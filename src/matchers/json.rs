@@ -1,9 +1,6 @@
 use crate::config::Matcher;
 
-pub(crate) fn match_json(
-    body_as_string: &String,
-    matcher: &Matcher,
-) -> Result<bool, anyhow::Error> {
+pub(crate) fn match_json(body_as_string: &str, matcher: &Matcher) -> Result<bool, anyhow::Error> {
     if matcher.match_json_body.is_none() {
         return Ok(false);
     }
@@ -11,10 +8,10 @@ pub(crate) fn match_json(
     let match_json_body = matcher
         .match_json_body
         .as_ref()
-        .ok_or(anyhow::anyhow!("No match_json_body"))?;
+        .ok_or_else(|| anyhow::anyhow!("No match_json_body"))?;
     let match_json_body = serde_json::json!(match_json_body);
 
-    let deserialized_result = serde_json::from_str::<serde_json::Value>(body_as_string.as_str());
+    let deserialized_result = serde_json::from_str::<serde_json::Value>(body_as_string);
     if deserialized_result.is_err() {
         debug!("Deserialization failed, skipping JSON matcher.");
         debug!(
@@ -47,7 +44,7 @@ mod tests {
 
     #[test]
     fn test_match_json() {
-        let body_as_string = "{\"key1\": \"value1\", \"key2\": \"value2\"}".into();
+        let body_as_string = "{\"key1\": \"value1\", \"key2\": \"value2\"}".to_string();
 
         let matcher = Matcher {
             match_headers: None,
@@ -62,7 +59,7 @@ mod tests {
 
     #[test]
     fn test_not_match_json() {
-        let body_as_string = "{\"key1\": \"value1\", \"key2\": \"value2\"}".into();
+        let body_as_string = "{\"key1\": \"value1\", \"key2\": \"value2\"}".to_string();
 
         let matcher = Matcher {
             match_headers: None,
