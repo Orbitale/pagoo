@@ -11,18 +11,18 @@ use std::process::Termination;
 use std::process::ExitCode;
 use crate::commands::serve_webhook;
 
-pub(crate) mod actions {
+mod actions {
     pub(crate) mod executor;
     pub(crate) mod matching_webhooks;
 }
 
-pub(crate) mod api {
+mod api {
     pub(crate) mod webhook;
 }
 
-pub(crate) mod config;
+mod config;
 
-pub(crate) mod commands {
+mod commands {
     pub(crate) mod serve_webhook;
 }
 
@@ -30,7 +30,7 @@ mod db;
 
 mod logging;
 
-pub(crate) mod matchers {
+mod matchers {
     pub(crate) mod headers;
     pub(crate) mod json;
 }
@@ -38,9 +38,47 @@ pub(crate) mod matchers {
 mod serve;
 
 #[cfg(test)]
-pub(crate) mod test_utils;
+mod test_utils;
 
 const APPLICATION_NAME: &str = "pagoo";
+const APP_VERSION_METADATA: &'static str = include_str!("../.version");
+
+fn main() -> ReturnExitCode {
+    let application_commands = application_commands();
+
+    let subcommands = application_commands.subcommands().into_iter();
+
+    let app = get_app().subcommands(subcommands);
+
+    let arg_matches = app.get_matches();
+    let mut config_file = arg_matches.value_of("config-file");
+    if config_file.is_some() && config_file.unwrap() == "" {
+        config_file = None;
+    }
+
+    let verbose_value = arg_matches.indices_of("verbose").unwrap_or_default();
+    let is_quiet = arg_matches.index_of("quiet").unwrap_or_default() > 0;
+
+    logging::set_verbosity_value(verbose_value.len(), is_quiet);
+
+    let subcommand_name = arg_matches.subcommand_name();
+    let args = if subcommand_name.is_some() {
+        arg_matches.subcommand_matches(&subcommand_name.unwrap())
+    } else {
+        None
+    };
+
+    if subcommand_name.is_some() {
+        let subcommand_name = subcommand_name.unwrap();
+        for command in application_commands.commands.iter() {
+            if command.command_definition.get_name() == subcommand_name {
+                return (command.executor)(config_file, args.unwrap()).into();
+            }
+        }
+    }
+
+    default_command().into()
+}
 
 struct ReturnExitCode {
     exit_code: Option<ExitCode>,
@@ -104,47 +142,7 @@ fn application_commands() -> CommandList {
     }
 }
 
-const APP_VERSION_METADATA: &'static str = include_str!("../.version");
-
-fn main() -> ReturnExitCode {
-    let application_commands = application_commands();
-
-    let subcommands = application_commands.subcommands().into_iter();
-
-    let app = get_app().subcommands(subcommands);
-
-    let matches = app.get_matches();
-    let mut config_file_value = matches.value_of("config-file");
-    if config_file_value.is_some() && config_file_value.unwrap() == "" {
-        config_file_value = None;
-    }
-
-    let verbose_value = matches.indices_of("verbose").unwrap_or_default();
-    let is_quiet = matches.index_of("quiet").unwrap_or_default() > 0;
-
-    logging::set_verbosity_value(verbose_value.len(), is_quiet);
-
-    let subcommand_name = matches.subcommand_name();
-    let args = if subcommand_name.is_some() {
-        matches.subcommand_matches(&subcommand_name.unwrap())
-    } else {
-        None
-    };
-
-    if subcommand_name.is_some() {
-        let subcommand_name = subcommand_name.unwrap();
-        for command in application_commands.commands.iter() {
-            if command.command_definition.get_name() == subcommand_name {
-                return (command.executor)(config_file_value, args.unwrap()).into();
-            }
-        }
-    }
-
-    default_command().into()
-}
-
 fn get_app<'a>() -> ClapCommand<'a> {
-
     ClapCommand::new(APPLICATION_NAME)
         .version(APP_VERSION_METADATA.trim())
         .author("Alex \"Pierstoval\" Rock <alex@orbitale.io>")
