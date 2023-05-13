@@ -25,7 +25,7 @@ To list project's commands, run `make` or `make help`.
   # Use the "pagoo" binary 👍
   ```
 
-# Usage
+# Configuration
 
 Run `pagoo init` to create a default configuration file `.pagoo.json` in the current directory.
 
@@ -74,6 +74,14 @@ Here is a sample configuration file with the options you can use:
     ]
 }
 ```
+
+# Usage
+
+To start the server, run `pagoo serve:webhook`. Add the `--help` option to see the different parameters (HTTP host, port, etc.).
+
+To trigger the webhook, you must make a `POST` HTTP request to Pagoo's `/webhook` endpoint.
+
+When you do so, Pagoo will compare the request with all your configured webhooks, and the first one matching the current request will trigger and execute a command. (Note: supporting multiple webhooks matching is not yet supported). 
 
 # Roadmap:
 
