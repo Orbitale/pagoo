@@ -11,7 +11,7 @@
                 },
                 {
                     "match-headers": {
-                        "x-some-http-header": "some-header-value",
+                        "x-some-http-header": "some-header-value"
                     }
                 }
             ],
