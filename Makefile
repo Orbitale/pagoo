@@ -39,7 +39,7 @@ build-for-docker: ## Builds Pagoo for Docker image
 .PHONY: build-for-docker
 
 build-docker-with-helper: ## Builds for the docker image using a helper docker container
-	docker run --rm -it -v $$(pwd):/home/rust/src -v $$HOME/.cargo/:/home/rust/.cargo/ ekidd/rust-musl-builder bash
+	docker run --rm -v $$(pwd):/home/rust/src -v $$HOME/.cargo/:/home/rust/.cargo/ ekidd/rust-musl-builder bash
 .PHONY: build-docker-with-helper
 
 build-docker-image: ## Builds the docker image
