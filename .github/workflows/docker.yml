@@ -42,7 +42,10 @@ jobs:
               run: make docker-deps
 
             - name: 🏗️ 💽 Build application
-              run: make build-docker
+              run: make build-docker-with-helper
+
+            - name: 🏗️ 💽 Build docker image
+              run: make build-docker-image
 
             - name: 🧪 Make sure docker build works
               run: docker run --rm pierstoval/pagoo --help

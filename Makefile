@@ -34,13 +34,17 @@ docker-deps: ## Install Pagoo's system dependencies for ubuntu/debian systems
 	sudo apt install musl-tools
 .PHONY: docker-deps
 
-build-for-docker: ## Builds the docker image
+build-for-docker: ## Builds Pagoo for Docker image
 	cargo build --release --target=x86_64-unknown-linux-musl
 .PHONY: build-for-docker
 
-build-docker: ## Builds the docker image
+build-docker-with-helper: ## Builds for the docker image using a helper docker container
+	docker run --rm -it -v $$(pwd):/home/rust/src -v $$HOME/.cargo/:/home/rust/.cargo/ ekidd/rust-musl-builder bash
+.PHONY: build-docker-with-helper
+
+build-docker-image: ## Builds the docker image
 	docker build . -t pierstoval/pagoo
-.PHONY: build-docker
+.PHONY: build-docker-image
 
 run: ## Execute "cargo run". Use the "ARGS" var to specify the arguments
 	cargo run $(ARGS)
@@ -122,7 +126,7 @@ curl-test:
 ##----
 ##
 ##Note:
-##All commands are executed in "debug" mode.
+##All commands (except docker ones) are executed in "debug" mode.
 ##To run the commands in "release" mode, use the "RELEASE=1" env var.
 ##
 ##For example:
