@@ -1,0 +1,48 @@
+name: Main CI
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    build:
+        name: Building for Docker
+
+        strategy:
+            matrix:
+                os: [ubuntu-latest]
+
+        env:
+            RUST_BACKTRACE: full
+            PAGOO_LOG: trace
+
+        runs-on: ${{ matrix.os }}
+        steps:
+            - { name: "Checkout the code", uses: actions/checkout@v2 }
+
+            - name: 🗄️ Setup Rust cache
+              uses: actions/cache@v2
+              with:
+                  key: ${{ matrix.os }}-${{ hashFiles('Cargo.lock') }}
+                  path: |
+                      ~/.cargo/registry/index
+                      ~/.cargo/registry/cache
+                      ~/.cargo/git
+                      ./target
+
+            - name: 🦀 Install Rust
+              uses: actions-rs/toolchain@v1
+              with: { toolchain: stable }
+
+            - name: 🔌 Download Rust dependencies
+              run: cargo fetch
+
+            - name: 🔌 Install build dependencies for Docker
+              run: make docker-deps
+
+            - name: 🏗️ 💽 Build application
+              run: make build-docker
+
+            - name: 🧪 Make sure docker build works
+              run: docker run --rm pierstoval/pagoo --help

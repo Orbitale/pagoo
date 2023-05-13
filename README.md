@@ -16,13 +16,22 @@ To list project's commands, run `make` or `make help`.
 
 # Installation
 
+* Via Docker:
+  ```bash
+  docker pull pierstoval/pagoo
+  docker run --rm pierstoval/pagoo --help
+  # Pro tip: alias it with this command:
+  # alias pagoo="docker run --rm pierstoval/pagoo"
+  ```
 * Via Cargo:
   ```bash
   git clone https://github.com/Orbitale/pagoo pagoo-src
   cargo build --manifest-path=./pagoo-src/Cargo.toml --release
   cp ./pagoo-src/target/release/pagoo pagoo
   rm -rf ./pagoo-src/
-  # Use the "pagoo" binary 👍
+  ./pagoo --help
+  # Pro tip: make it global by adding it to a PATH-accessible directory:
+  # sudo cp ./pagoo /usr/local/bin/pagoo
   ```
 
 # Configuration

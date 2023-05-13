@@ -7,9 +7,9 @@ _INFO := "\033[32m[%s]\033[0m %s\n" # Green text
 _ERROR := "\033[31m[%s]\033[0m %s\n" # Red text
 
 ifeq ($(RELEASE),1)
-	TARGET=--release
+	RELEASE=--release
 else
-	TARGET=
+	RELEASE=
 endif
 
 ## Necessary for coverage, doesn't impact compile-time too much (yet?).
@@ -29,16 +29,29 @@ help: ## Show this help message
 	@grep -E '(^[a-zA-Z_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf " \033[32m%-25s\033[0m%s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
 .PHONY: help
 
+docker-deps: ## Install Pagoo's system dependencies for ubuntu/debian systems
+	rustup target add x86_64-unknown-linux-musl
+	sudo apt install musl-tools
+.PHONY: docker-deps
+
+build-for-docker: ## Builds the docker image
+	cargo build --release --target=x86_64-unknown-linux-musl
+.PHONY: build-for-docker
+
+build-docker: ## Builds the docker image
+	docker build . -t pierstoval/pagoo
+.PHONY: build-docker
+
 run: ## Execute "cargo run". Use the "ARGS" var to specify the arguments
 	cargo run $(ARGS)
 .PHONY: run
 
 start-webhook: ## Start the release version of the webhook API
-	cargo run $(TARGET) -- --config-file samples/json_sample.json serve:webhook 2>&1
+	cargo run $(RELEASE) -- --config-file samples/json_sample.json serve:webhook 2>&1
 .PHONY: start-webhook
 
 build: ## Build the project
-	cargo build $(TARGET)
+	cargo build $(RELEASE)
 .PHONY: build
 
 ##
@@ -49,7 +62,7 @@ build: ## Build the project
 
 build-test: ## Build the test modules	(alias: build-tests)
 	@printf $(_INFO) "INFO" "Building test modules..."
-	@cargo test --no-run $(TARGET)
+	@cargo test --no-run $(RELEASE)
 	@printf $(_INFO) "INFO" "✅ Done building test modules!"
 .PHONY: build-test
 
@@ -59,7 +72,7 @@ build-tests: build-test # Alias
 test: build-test ## Run the tests			(alias: tests)
 	@printf $(_INFO) "INFO" "Removing coverage artifacts..."
 	@rm -rf target/coverage/*
-	@cargo test --no-fail-fast $(TARGET) -- --show-output --nocapture
+	@cargo test --no-fail-fast $(RELEASE) -- --show-output --nocapture
 .PHONY: test
 
 tests: test # Alias
