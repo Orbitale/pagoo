@@ -42,7 +42,7 @@ jobs:
               run: make docker-deps
 
             - name: 🏗️ 💽 Build application
-              run: make build-docker-with-helper
+              run: make build-for-docker
 
             - name: 🏗️ 💽 Build docker image
               run: make build-docker-image
