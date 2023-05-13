@@ -26,7 +26,7 @@ endif
 
 .DEFAULT_GOAL := help
 help: ## Show this help message
-	@grep -E '(^[a-zA-Z_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf " \033[32m%-25s\033[0m%s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
+	@grep -E '(^[a-zA-Z_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf " \033[32m%-28s\033[0m%s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
 .PHONY: help
 
 docker-deps: ## Install Pagoo's system dependencies for ubuntu/debian systems
@@ -34,13 +34,13 @@ docker-deps: ## Install Pagoo's system dependencies for ubuntu/debian systems
 	sudo apt install musl-tools
 .PHONY: docker-deps
 
-build-for-docker: ## Builds Pagoo for Docker image
+compile-for-docker: ## Builds Pagoo for Docker image
 	cargo build --release --target=x86_64-unknown-linux-musl
-.PHONY: build-for-docker
+.PHONY: compile-for-docker
 
-build-docker-with-helper: ## Builds for the docker image using a helper docker container
+compile-for-docker-w-helper: ## Builds for the docker image using a helper docker container
 	docker run --rm -v $$(pwd):/home/rust/src -v $$HOME/.cargo/:/home/rust/.cargo/ ekidd/rust-musl-builder bash
-.PHONY: build-docker-with-helper
+.PHONY: compile-for-docker-w-helper
 
 build-docker-image: ## Builds the docker image
 	docker build . -t pierstoval/pagoo
@@ -73,7 +73,7 @@ build-test: ## Build the test modules	(alias: build-tests)
 build-tests: build-test # Alias
 .PHONY: build-tests
 
-test: build-test ## Run the tests			(alias: tests)
+test: build-test ## Run the tests		(alias: tests)
 	@printf $(_INFO) "INFO" "Removing coverage artifacts..."
 	@rm -rf target/coverage/*
 	@cargo test --no-fail-fast $(RELEASE) -- --show-output --nocapture
@@ -123,12 +123,12 @@ curl-test:
 .PHONY: curl-test
 
 ##
-##----
+##⎼⎼⎼⎼⎼⎼⎼⎼
 ##
-##Note:
-##All commands (except docker ones) are executed in "debug" mode.
-##To run the commands in "release" mode, use the "RELEASE=1" env var.
+## Note:
+## All commands (except docker ones) are executed in "debug" mode.
+## To run the commands in "release" mode, use the "RELEASE=1" env var.
 ##
-##For example:
-##$ make RELEASE=1 build
+## For example:
+## $ make RELEASE=1 build
 ##
