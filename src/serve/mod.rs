@@ -2,6 +2,7 @@ use crate::actions::executor;
 use crate::config;
 use crate::config::Webhook;
 use crate::db::get_database_connection;
+use crate::http;
 use actix_web::web;
 use actix_web::App;
 use actix_web::HttpServer;
@@ -11,35 +12,26 @@ use std::io::ErrorKind;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 
-pub(crate) const DEFAULT_PORT: &str = "8000";
+pub(crate) const DEFAULT_WEBHOOK_PORT: &str = "8000";
+pub(crate) const DEFAULT_ADMIN_PORT: &str = "8010";
 pub(crate) const DEFAULT_HOST: &str = "127.0.0.1";
-pub(crate) const API_PATH: &str = "/webhook";
+pub(crate) const WEBHOOK_API_PATH: &str = "/webhook";
 
 #[actix_web::main]
-pub(crate) async fn serve(
+pub(crate) async fn serve_webhook(
     config_file: Option<&str>,
     host: Option<&str>,
     port: Option<&str>,
 ) -> std::io::Result<()> {
     let host = host.unwrap_or(DEFAULT_HOST);
-    let port = port.unwrap_or(DEFAULT_PORT);
+    let port = port.unwrap_or(DEFAULT_WEBHOOK_PORT);
 
     let port_as_int = port.parse::<u16>().expect("Invalid port value.");
 
     let config = config::get_config(config_file);
 
     if config.is_err() {
-        let config_file_path = config::get_config_file(config_file);
-        if config_file_path.is_err() {
-            error!("{}", config_file_path.unwrap_err().to_string());
-            std::process::exit(1);
-        }
-        error!(
-            "Error loading config file \"{}\"",
-            config_file_path.unwrap().to_str().unwrap()
-        );
-        let err = config.unwrap_err();
-        return Err(Error::new(ErrorKind::Other, err));
+        return Err(Error::new(ErrorKind::Other, config.unwrap_err()));
     }
 
     let config = config.unwrap();
@@ -62,7 +54,37 @@ pub(crate) async fn serve(
         App::new()
             .app_data(config.clone())
             .app_data(transmitter_data.clone())
-            .service(web::resource(API_PATH).to(crate::http::webhook::webhook))
+            .service(web::resource(WEBHOOK_API_PATH).to(crate::http::webhook::webhook))
+    })
+    .bind((host, port_as_int))?
+    .run()
+    .await
+}
+
+#[actix_web::main]
+pub(crate) async fn serve_admin(
+    config_file: Option<&str>,
+    host: Option<&str>,
+    port: Option<&str>,
+) -> std::io::Result<()> {
+    let host = host.unwrap_or(DEFAULT_HOST);
+    let port = port.unwrap_or(DEFAULT_ADMIN_PORT);
+
+    let port_as_int = port.parse::<u16>().expect("Invalid port value.");
+
+    let config = config::get_config(config_file).unwrap();
+    let database_connection = get_database_connection(config.database_file.clone()).unwrap();
+
+    let config = web::Data::new(config);
+    let database_connection = web::Data::new(Arc::new(Mutex::new(database_connection)));
+
+    info!("Starting HTTP server on {}:{}", host, port);
+
+    HttpServer::new(move || {
+        App::new()
+            .app_data(config.clone())
+            .app_data(database_connection.clone())
+            .service(http::admin::index)
     })
     .bind((host, port_as_int))?
     .run()
