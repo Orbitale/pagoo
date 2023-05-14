@@ -44,11 +44,9 @@ Once an HTTP request is posted to the webhook, if a **matcher** corresponds to t
 
 Here is a sample configuration file with the options you can use:
 
-```js
+```json lines
 {
-    "webhooks":
-    // The array with the webhooks
-    [ 
+    "webhooks": [// The array with the webhooks 
         {
             // A unique name for your webhook. Used for referencing and logging.
             "name": "webhook_1",
