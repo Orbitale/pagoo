@@ -1,10 +1,10 @@
-use std::fs::File;
-use crate::APPLICATION_NAME;
 use crate::CommandHandler;
-use std::io::Write;
-use std::process::ExitCode;
+use crate::APPLICATION_NAME;
 use clap::ArgMatches;
 use clap::Command as ClapCommand;
+use std::fs::File;
+use std::io::Write;
+use std::process::ExitCode;
 
 const FILE_SAMPLE: &str = include_str!("../../samples/init_sample.json");
 
@@ -33,7 +33,10 @@ fn execute(_config_file_value: Option<&str>, _args: &ArgMatches) -> Option<ExitC
         return Some(ExitCode::FAILURE);
     }
 
-    info!("Done! Created config file at path {}", config_file_path.to_str().unwrap());
+    info!(
+        "Done! Created config file at path {}",
+        config_file_path.to_str().unwrap()
+    );
 
     Some(ExitCode::SUCCESS)
 }
