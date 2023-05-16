@@ -3,13 +3,20 @@ use crate::config;
 use crate::config::Webhook;
 use crate::db::get_database_connection;
 use crate::http;
+use actix_web::dev::Service;
+use actix_web::middleware::Logger;
 use actix_web::web;
 use actix_web::App;
+use actix_web::HttpResponse;
 use actix_web::HttpServer;
+use futures_util::future::Either;
+use futures_util::FutureExt;
 use rusqlite::Connection;
+use std::future;
 use std::io::Error;
 use std::io::ErrorKind;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::Mutex;
 use tokio::sync::mpsc;
 
 pub(crate) const DEFAULT_WEBHOOK_PORT: &str = "8000";
@@ -54,6 +61,7 @@ pub(crate) async fn serve_webhook(
         App::new()
             .app_data(config.clone())
             .app_data(transmitter_data.clone())
+            .wrap(Logger::default())
             .service(web::resource(WEBHOOK_API_PATH).to(crate::http::webhook::webhook))
     })
     .bind((host, port_as_int))?
@@ -84,7 +92,17 @@ pub(crate) async fn serve_admin(
         App::new()
             .app_data(config.clone())
             .app_data(database_connection.clone())
-            .service(http::admin::index)
+            // .wrap(http::admin::AdminAsset::new())
+            .wrap_fn(|sreq, srv| {
+                let path = sreq.path().to_string();
+                let asset_exists: Option<HttpResponse> = http::admin::frontend_assets(path.clone());
+
+                match asset_exists {
+                    None => Either::Left(srv.call(sreq).map(|res| res)),
+                    Some(asset) => return Either::Right(future::ready(Ok(sreq.into_response(asset)))),
+                }
+            })
+            .service(http::admin::api_root)
     })
     .bind((host, port_as_int))?
     .run()

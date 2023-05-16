@@ -2,9 +2,9 @@ use static_files::resource_dir;
 use std::env;
 use std::fs::read_to_string;
 use std::fs::remove_file;
+use std::fs::File;
 use std::path::Path;
 use std::path::PathBuf;
-use std::fs::File;
 use std::process::Command;
 use std::process::Output;
 use std::process::Stdio;
@@ -15,10 +15,15 @@ fn main() {
     admin_frontend_deps(yarn.clone());
     admin_frontend_build(yarn.clone());
 
-    resource_dir(format!("{}/admin_app/build/", env::var("CARGO_MANIFEST_DIR").unwrap())).build().unwrap();
+    resource_dir(format!(
+        "{}/admin_app/build/",
+        env::var("CARGO_MANIFEST_DIR").unwrap()
+    ))
+    .build()
+    .unwrap();
 }
 
-fn admin_frontend_deps(yarn: PathBuf){
+fn admin_frontend_deps(yarn: PathBuf) {
     let mut command = Command::new(yarn);
     let (stdout, stderr) = get_std_outputs();
     command
@@ -26,14 +31,16 @@ fn admin_frontend_deps(yarn: PathBuf){
         .stdout(stdout)
         .stderr(stderr)
         .arg("--cwd")
-        .arg(format!("{}/admin_app/", env::var("CARGO_MANIFEST_DIR").unwrap()))
-        .arg("install")
-    ;
+        .arg(format!(
+            "{}/admin_app/",
+            env::var("CARGO_MANIFEST_DIR").unwrap()
+        ))
+        .arg("install");
 
     handle_error(command.output());
 }
 
-fn admin_frontend_build(yarn: PathBuf){
+fn admin_frontend_build(yarn: PathBuf) {
     let mut command = Command::new(yarn);
     let (stdout, stderr) = get_std_outputs();
     command
@@ -41,9 +48,11 @@ fn admin_frontend_build(yarn: PathBuf){
         .stdout(stdout)
         .stderr(stderr)
         .arg("--cwd")
-        .arg(format!("{}/admin_app/", env::var("CARGO_MANIFEST_DIR").unwrap()))
-        .arg("build")
-    ;
+        .arg(format!(
+            "{}/admin_app/",
+            env::var("CARGO_MANIFEST_DIR").unwrap()
+        ))
+        .arg("build");
 
     handle_error(command.output());
 }
@@ -55,12 +64,15 @@ fn handle_error(output: std::io::Result<Output>) {
             if code != 0 {
                 let error = read_to_string("build.err")
                     .expect("Could not retrieve error log after failing to build admin frontend.");
-                panic!(" An error occured when building admin frontend.\n Here is the error log:\n{}", error);
+                panic!(
+                    " An error occured when building admin frontend.\n Here is the error log:\n{}",
+                    error
+                );
             }
-        },
+        }
         Err(e) => {
             panic!(" Could not build admin frontend: {}", e);
-        },
+        }
     };
 }
 
