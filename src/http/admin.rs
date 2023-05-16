@@ -1,25 +1,31 @@
-use crate::config::Config;
-use actix_web::web::Bytes;
-use actix_web::web::Data;
-use actix_web::{get, HttpRequest};
+use actix_web::get;
+use actix_web::HttpResponse;
 use actix_web::Responder;
-use rusqlite::Connection;
-use std::sync::Arc;
-use std::sync::Mutex;
 
-#[get("/")]
-pub(crate) async fn index(
-    _request: HttpRequest,
-    _body_bytes: Bytes,
-    _config: Data<Config>,
-    _database: Data<Arc<Mutex<Connection>>>,
-) -> impl Responder {
+pub(crate) fn frontend_assets(path: String) -> Option<HttpResponse> {
+    let path = &mut path.clone();
+
+    let last_char = path.chars().last().unwrap().to_string();
+    if last_char == "/" {
+        path.push_str("index.html");
+    }
+    path.remove(0);
+
     let assets = crate::generate();
+    let asset = assets.get(path.as_str());
+    if asset.is_none() {
+        return None;
+    }
+    let asset = asset.unwrap();
 
-    let cnt = assets.get("index.html").unwrap();
-    let cnt_str = String::from_utf8(cnt.data.to_vec()).unwrap();
+    Some(
+        HttpResponse::Ok()
+            .insert_header(("Content-Type", asset.mime_type))
+            .body(asset.data),
+    )
+}
 
-    dbg!("{}", &cnt_str);
-
-    "Hello!"
+#[get("/api")]
+pub(crate) async fn api_root() -> impl Responder {
+    "Api endpoint.".to_string()
 }
