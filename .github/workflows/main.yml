@@ -14,7 +14,6 @@ jobs:
                 target: [release, development]
                 os:
                     - ubuntu-latest
-                    - windows-latest
 
         env:
             RUST_BACKTRACE: full
@@ -48,8 +47,47 @@ jobs:
             - name: 🧪 Run all tests
               run: make test
 
-            #- name: 🚀 Upload release artifacts
-            #  uses: actions/upload-artifact@v2
-            #  with:
-            #      name: release-${{ matrix.os }}
-            #      path: target/release/*
+            - name: 🗃 Store Linux artifacts (release only)
+              uses: actions/upload-artifact@v4
+              if: startsWith(github.ref, 'refs/tags/v') && matrix.target == 'release'
+              with:
+                name: compotes_artifacts_${{ matrix.os }}
+                overwrite: true
+                path: |
+                  target/release/pagoo
+
+    release:
+        runs-on: ubuntu-latest
+        needs:
+            - build
+        if: startsWith(github.ref, 'refs/tags/v')
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Create release
+              uses: actions/create-release@v1
+              id: create_release
+              with:
+                  draft: false
+                  prerelease: false
+                  release_name: ${{ steps.version.outputs.version }}
+                  tag_name: ${{ github.ref }}
+                  #body_path: CHANGELOG.md
+              env:
+                  GITHUB_TOKEN: ${{ github.token }}
+
+            - name: 🗃 Download built artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: target/release
+                  merge-multiple: true
+
+            - name: Upload Linux executable
+              uses: svenstaro/upload-release-action@v2
+              with:
+                  repo_token: ${{ secrets.GITHUB_TOKEN }}
+                  file: target/release/pagoo
+                  asset_name: pagoo_${{ github.ref_name }}
+                  tag: ${{ github.ref_name }}
+                  overwrite: true
+                  file_glob: true
