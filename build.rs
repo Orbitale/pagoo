@@ -10,10 +10,10 @@ use std::process::Output;
 use std::process::Stdio;
 
 fn main() {
-    let yarn = which::which("yarn").expect("Could not find Yarn executable.");
+    let pnpm = which::which("pnpm").expect("Could not find pnpm executable.");
 
-    admin_frontend_deps(yarn.clone());
-    admin_frontend_build(yarn.clone());
+    admin_frontend_deps(pnpm.clone());
+    admin_frontend_build(pnpm.clone());
 
     resource_dir(format!(
         "{}/admin_app/build/",
@@ -23,14 +23,14 @@ fn main() {
     .unwrap();
 }
 
-fn admin_frontend_deps(yarn: PathBuf) {
-    let mut command = Command::new(yarn);
+fn admin_frontend_deps(pnpm: PathBuf) {
+    let mut command = Command::new(pnpm);
     let (stdout, stderr) = get_std_outputs();
     command
         .stdin(Stdio::null())
         .stdout(stdout)
         .stderr(stderr)
-        .arg("--cwd")
+        .arg("--dir")
         .arg(format!(
             "{}/admin_app/",
             env::var("CARGO_MANIFEST_DIR").unwrap()
@@ -40,14 +40,14 @@ fn admin_frontend_deps(yarn: PathBuf) {
     handle_error(command.output());
 }
 
-fn admin_frontend_build(yarn: PathBuf) {
-    let mut command = Command::new(yarn);
+fn admin_frontend_build(pnpm: PathBuf) {
+    let mut command = Command::new(pnpm);
     let (stdout, stderr) = get_std_outputs();
     command
         .stdin(Stdio::null())
         .stdout(stdout)
         .stderr(stderr)
-        .arg("--cwd")
+        .arg("--dir")
         .arg(format!(
             "{}/admin_app/",
             env::var("CARGO_MANIFEST_DIR").unwrap()
