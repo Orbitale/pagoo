@@ -3,7 +3,7 @@ extern crate pretty_env_logger;
 extern crate log;
 
 use crate::commands::init;
-use crate::commands::serve_webhook;
+use crate::commands::serve as command_serve;
 use clap::Arg;
 use clap::ArgAction;
 use clap::ArgMatches;
@@ -22,7 +22,7 @@ mod config;
 
 mod commands {
     pub(crate) mod init;
-    pub(crate) mod serve_webhook;
+    pub(crate) mod serve;
 }
 
 mod db;
@@ -147,7 +147,7 @@ impl CommandHandler {
 fn application_commands() -> CommandList {
     CommandList {
         commands: vec![
-            serve_webhook::get_command(),
+            command_serve::get_command(),
             init::get_command(),
         ],
     }
@@ -156,7 +156,7 @@ fn application_commands() -> CommandList {
 fn get_app() -> ClapCommand {
     ClapCommand::new(APPLICATION_NAME)
         .version(APP_VERSION_METADATA.trim())
-        .author("Alex \"Pierstoval\" Rock <alex@orbitale.io>")
+        .author("Alex \"Pierstoval\" Rock <pierstoval@gmail.com>")
         .about("A tool to manage your local CI/CD/etc setup")
         .arg(
             Arg::new("config-file")
