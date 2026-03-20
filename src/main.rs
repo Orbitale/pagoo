@@ -2,7 +2,8 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
-use crate::commands::{init, serve_admin, serve_webhook};
+use crate::commands::init;
+use crate::commands::serve_webhook;
 use clap::Arg;
 use clap::ArgAction;
 use clap::ArgMatches;
@@ -21,7 +22,6 @@ mod config;
 
 mod commands {
     pub(crate) mod init;
-    pub(crate) mod serve_admin;
     pub(crate) mod serve_webhook;
 }
 
@@ -147,7 +147,6 @@ impl CommandHandler {
 fn application_commands() -> CommandList {
     CommandList {
         commands: vec![
-            serve_admin::get_command(),
             serve_webhook::get_command(),
             init::get_command(),
         ],

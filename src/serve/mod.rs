@@ -21,6 +21,7 @@ use tokio::sync::mpsc;
 
 pub(crate) const DEFAULT_WEBHOOK_PORT: &str = "8000";
 pub(crate) const DEFAULT_ADMIN_PORT: &str = "8010";
+pub(crate) const DEFAULT_ADMIN_PATH: &str = "/admin";
 pub(crate) const DEFAULT_HOST: &str = "127.0.0.1";
 pub(crate) const WEBHOOK_API_PATH: &str = "/webhook";
 
@@ -29,6 +30,8 @@ pub(crate) async fn serve_webhook(
     config_file: Option<&str>,
     host: Option<&str>,
     port: Option<&str>,
+    admin: bool,
+    admin_path: Option<&str>,
 ) -> std::io::Result<()> {
     let host = host.unwrap_or(DEFAULT_HOST);
     let port = port.unwrap_or(DEFAULT_WEBHOOK_PORT);
