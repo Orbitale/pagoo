@@ -118,6 +118,7 @@ pub(crate) fn serve_admin(
                     }
                 })
                 .service(http::admin::api_root)
+                .service(http::admin::get_tasks)
         })
             .bind((host, port_as_int))?
             .run()

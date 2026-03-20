@@ -24,9 +24,9 @@ pub(crate) fn execute_webhook_actions(
         cmd.args(actions.clone());
         let output: std::io::Result<Output> = cmd.output();
 
-        let mut status: i32;
+        let status: i32;
         let mut stdout_str = String::from("");
-        let mut stderr_str: String;
+        let stderr_str: String;
 
         if output.is_ok() {
             let output_result = output.unwrap();

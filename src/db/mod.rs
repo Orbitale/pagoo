@@ -47,5 +47,8 @@ fn get_database_flags() -> OpenFlags {
 }
 
 fn get_migrations() -> Migrations<'static> {
-    Migrations::new(vec![M::up(include_str!("./migrations/00-schema.sql"))])
+    Migrations::new(vec![
+        M::up(include_str!("./migrations/00-schema.sql")),
+        M::up(include_str!("./migrations/01-logs_ids.sql"))
+    ])
 }
