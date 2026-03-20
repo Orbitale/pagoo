@@ -2,8 +2,10 @@ use crate::config::Webhook;
 use rusqlite::named_params;
 use rusqlite::Connection;
 use std::process::Command;
+use std::process::Output;
 use std::sync::Arc;
 use std::sync::Mutex;
+use actix_web::ResponseError;
 
 pub(crate) fn execute_webhook_actions(
     webhooks: Vec<Webhook>,
@@ -20,11 +22,22 @@ pub(crate) fn execute_webhook_actions(
         let command = actions.remove(0);
         let mut cmd = Command::new(command);
         cmd.args(actions.clone());
-        let output = cmd.output()?;
+        let output: std::io::Result<Output> = cmd.output();
 
-        let status = output.status.code().unwrap();
-        let stdout_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        let stderr_str = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        let mut status: i32;
+        let mut stdout_str = String::from("");
+        let mut stderr_str: String;
+
+        if output.is_ok() {
+            let output_result = output.unwrap();
+            status = output_result.status.code().unwrap_or(161);
+            stdout_str = String::from_utf8_lossy(&output_result.stdout).trim().to_string();
+            stderr_str = String::from_utf8_lossy(&output_result.stderr).trim().to_string();
+        } else {
+            let err = output.unwrap_err();
+            status = err.status_code().as_u16().into();
+            stderr_str = format!("kind: {} ; message: {}", err.kind(), err.to_string());
+        }
 
         conn.execute(
             "
