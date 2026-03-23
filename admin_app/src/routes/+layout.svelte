@@ -1,6 +1,6 @@
 <script lang="ts">
 	import 'bootstrap/dist/css/bootstrap.min.css';
-	import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+	import bootstrapJs from 'bootstrap/dist/js/bootstrap.bundle.js?url';
 
 	import favicon from '$lib/assets/favicon.svg';
 	import Header from "$lib/UI/Header.svelte";
@@ -11,6 +11,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<script src="{bootstrapJs}"></script>
 </svelte:head>
 
 <Header />

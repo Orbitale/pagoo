@@ -9,8 +9,7 @@ const config = {
 		adapter: adapter({
 			pages: './build/',
 			assets: './build/',
-			precompress: true,
-			fallback: 'index.html'
+			precompress: true
 		})
 	},
 	vitePlugin: {
