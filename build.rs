@@ -12,6 +12,10 @@ use std::process::Stdio;
 fn main() {
     let pnpm = which::which("pnpm").expect("Could not find pnpm executable.");
 
+    let data_path_in = format!("{}/admin_app/build/", env::var("CARGO_MANIFEST_DIR").unwrap());
+
+    println!("cargo:rerun-if-changed={data_path_in}");
+
     admin_frontend_deps(pnpm.clone());
     admin_frontend_build(pnpm.clone());
 

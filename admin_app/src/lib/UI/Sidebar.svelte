@@ -10,8 +10,13 @@
     <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto">
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link d-flex align-items-center  active" aria-current="page" href="#">
+                <a class="nav-link d-flex align-items-center  active" aria-current="page" href="/">
                     Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link d-flex align-items-center" href="/config">
+                    Config
                 </a>
             </li>
         </ul>

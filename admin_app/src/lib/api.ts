@@ -1,3 +1,28 @@
+export interface Matcher {
+  'match-json-body'?: Record<string, unknown>;
+  'match-headers'?: Record<string, string>;
+}
+
+export interface Webhook {
+  name: string;
+  'matchers-strategy'?: 'all' | 'one';
+  matchers: Matcher[];
+  'actions-to-execute': string[];
+}
+
+export interface PagooConfig {
+  database_file?: string;
+  webhooks: Webhook[];
+}
+
+export async function fetchConfig(): Promise<PagooConfig> {
+  const response = await fetch('/api/config');
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: Failed to fetch config`);
+  }
+  return await response.json();
+}
+
 export interface Task {
   id: string;
   execution_date: string;

@@ -100,7 +100,7 @@ pub(crate) fn serve_admin(
     let config = web::Data::new(config);
     let database_connection = web::Data::new(Arc::new(Mutex::new(database_connection)));
 
-    info!("Starting HTTP server on {}:{}", host, port);
+    info!("Starting Admin HTTP server on {}:{}", host, port);
 
     Ok(
         HttpServer::new(move || {
@@ -119,6 +119,7 @@ pub(crate) fn serve_admin(
                 })
                 .service(http::admin::api_root)
                 .service(http::admin::get_tasks)
+                .service(http::admin::get_config)
         })
             .bind((host, port_as_int))?
             .run()

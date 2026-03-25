@@ -1,3 +1,4 @@
+use crate::config::Config;
 use actix_web::get;
 use actix_web::web;
 use actix_web::HttpResponse;
@@ -44,6 +45,11 @@ pub(crate) struct Task {
 #[get("/api")]
 pub(crate) async fn api_root() -> impl Responder {
     "Api endpoint.".to_string()
+}
+
+#[get("/api/config")]
+pub(crate) async fn get_config(config: web::Data<Config>) -> impl Responder {
+    HttpResponse::Ok().json(config.get_ref())
 }
 
 #[get("/api/tasks")]

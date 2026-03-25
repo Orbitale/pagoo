@@ -1,28 +1,28 @@
 use crate::APPLICATION_NAME;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::PathBuf;
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub(crate) struct Config {
-    #[serde(skip_deserializing)]
+    #[serde(skip)]
     config_file: String,
     pub(crate) database_file: Option<String>,
     pub(crate) webhooks: Vec<Webhook>,
 }
 
-#[derive(Debug, Default, Deserialize, Clone)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
 pub(crate) struct Webhook {
     pub(crate) name: String,
-    #[serde(rename(deserialize = "matchers-strategy"))]
+    #[serde(rename = "matchers-strategy")]
     pub(crate) matchers_strategy: Option<MatchersStrategy>,
     pub(crate) matchers: Vec<Matcher>,
-    #[serde(rename(deserialize = "actions-to-execute"))]
+    #[serde(rename = "actions-to-execute")]
     pub(crate) actions_to_execute: Vec<String>,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
 pub(crate) enum MatchersStrategy {
     #[serde(rename = "all")]
     All,
@@ -30,11 +30,11 @@ pub(crate) enum MatchersStrategy {
     One,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub(crate) struct Matcher {
-    #[serde(rename(deserialize = "match-json-body"))]
+    #[serde(rename = "match-json-body")]
     pub(crate) match_json_body: Option<serde_json::Value>,
-    #[serde(rename(deserialize = "match-headers"))]
+    #[serde(rename = "match-headers")]
     pub(crate) match_headers: Option<HashMap<String, String>>,
 }
 
